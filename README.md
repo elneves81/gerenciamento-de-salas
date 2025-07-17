@@ -71,3 +71,4 @@ npm run dev
 - [ ] Deploy em produção
 - [ ] Notificações por email
 - [ ] Integração com calendário
+- [ ] ELN - SOLUÇÕES
