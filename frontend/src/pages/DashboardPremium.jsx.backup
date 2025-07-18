@@ -1,0 +1,1511 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Building2, 
+  Calendar, 
+  Users, 
+  Clock, 
+  Plus,
+  TrendingUp,
+  MapPin,
+  Settings,
+  Bell,
+  Search,
+  Filter,
+  ChevronRight,
+  CalendarDays,
+  Timer,
+  CheckCircle2,
+  AlertCircle,
+  LogOut,
+  Menu,
+  X,
+  Home,
+  CalendarCheck,
+  BarChart3,
+  Activity,
+  Zap,
+  Star,
+  ArrowUpRight,
+  Wifi,
+  Shield
+} from 'lucide-react';
+import api from '../services/api';
+
+const Dashboard = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [stats, setStats] = useState({
+    minhasReservas: 0,
+    totalSalas: 0,
+    salasOcupadas: 0,
+    salasDisponiveis: 0
+  });
+  const [reservasProximas, setReservasProximas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    carregarDados();
+  }, []);
+
+  const carregarDados = async () => {
+    try {
+      // Carregar dados reais da API
+      const [salasResponse, reservasResponse] = await Promise.all([
+        api.get('/salas/'),
+        api.get('/reservas/')
+      ]);
+
+      const salas = salasResponse.data;
+      const reservas = reservasResponse.data;
+
+      // Calcular estatísticas
+      const salasDisponiveis = salas.filter(sala => sala.disponibilidade).length;
+      const salasOcupadas = salas.length - salasDisponiveis;
+      const minhasReservas = reservas.filter(reserva => 
+        reserva.usuario === user.id && 
+        new Date(reserva.data_inicio) >= new Date()
+      ).length;
+
+      setStats({
+        minhasReservas,
+        totalSalas: salas.length,
+        salasOcupadas,
+        salasDisponiveis
+      });
+      
+      // Próximas reservas
+      const proximasReservas = reservas
+        .filter(reserva => new Date(reserva.data_inicio) >= new Date())
+        .sort((a, b) => new Date(a.data_inicio) - new Date(b.data_inicio))
+        .slice(0, 5)
+        .map(reserva => {
+          const dataInicio = new Date(reserva.data_inicio);
+          const dataFim = new Date(reserva.data_fim);
+          const hoje = new Date();
+          const amanha = new Date(hoje);
+          amanha.setDate(hoje.getDate() + 1);
+
+          let dataTexto = 'Hoje';
+          if (dataInicio.toDateString() === amanha.toDateString()) {
+            dataTexto = 'Amanhã';
+          } else if (dataInicio.toDateString() !== hoje.toDateString()) {
+            dataTexto = dataInicio.toLocaleDateString();
+          }
+
+          return {
+            id: reserva.id,
+            titulo: reserva.titulo,
+            sala: reserva.sala_nome || `Sala ${reserva.sala}`,
+            horario: `${dataInicio.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})} - ${dataFim.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`,
+            data: dataTexto,
+            status: 'confirmada'
+          };
+        });
+
+      setReservasProximas(proximasReservas);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      // Dados de fallback em caso de erro
+      setStats({
+        minhasReservas: 0,
+        totalSalas: 0,
+        salasOcupadas: 0,
+        salasDisponiveis: 0
+      });
+      setReservasProximas([]);
+      setLoading(false);
+    }
+  };
+
+  const StatCard = ({ icon: Icon, title, value, subtitle, color = "blue", trend, onClick }) => (
+    <div 
+      onClick={onClick}
+      className={`stat-card stat-card-${color} ${onClick ? 'stat-card-clickable' : ''}`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <div className="flex items-center space-x-4">
+            <div className={`stat-icon stat-icon-${color}`}>
+              <Icon className="h-7 w-7" />
+            </div>
+            <div>
+              <p className="stat-title">{title}</p>
+              <p className="stat-value">{value}</p>
+              {subtitle && <p className="stat-subtitle">{subtitle}</p>}
+            </div>
+          </div>
+        </div>
+        {trend && (
+          <div className="stat-trend">
+            <TrendingUp className="h-4 w-4" />
+            <span className="text-sm font-medium">{trend}</span>
+          </div>
+        )}
+        {onClick && (
+          <ArrowUpRight className="stat-arrow" />
+        )}
+      </div>
+    </div>
+  );
+
+  const ReservaCard = ({ reserva }) => (
+    <div className="reserva-card">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <div className="flex items-center space-x-4">
+            <div className={`reserva-status ${reserva.status === 'confirmada' ? 'reserva-status-confirmed' : 'reserva-status-pending'}`}>
+              {reserva.status === 'confirmada' ? 
+                <CheckCircle2 className="h-5 w-5" /> :
+                <AlertCircle className="h-5 w-5" />
+              }
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="reserva-title">{reserva.titulo}</h4>
+              <div className="flex items-center space-x-4 mt-2">
+                <div className="reserva-info">
+                  <MapPin className="h-4 w-4" />
+                  <span className="text-sm">{reserva.sala}</span>
+                </div>
+                <div className="reserva-info">
+                  <Timer className="h-4 w-4" />
+                  <span className="text-sm">{reserva.horario}</span>
+                </div>
+              </div>
+              <span className={`reserva-badge ${
+                reserva.data === 'Hoje' ? 'reserva-badge-today' : 'reserva-badge-default'
+              }`}>
+                {reserva.data}
+              </span>
+            </div>
+          </div>
+        </div>
+        <ChevronRight className="reserva-chevron" />
+      </div>
+    </div>
+  );
+
+  const NavigationButton = ({ icon: Icon, label, onClick, active = false }) => (
+    <button
+      onClick={onClick}
+      className={`nav-button ${active ? 'nav-button-active' : ''}`}
+    >
+      <Icon className={`h-5 w-5 ${active ? 'text-blue-600' : 'text-gray-500'}`} />
+      <span className="font-medium">{label}</span>
+    </button>
+  );
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="text-center">
+          <div className="relative">
+            <div className="loading-spinner"></div>
+            <div className="loading-icon">
+              <Building2 className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+          <p className="loading-text">Carregando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dashboard-container">
+      {/* Background with CSS3 animations */}
+      <div className="animated-background">
+        <div className="floating-shape shape-1"></div>
+        <div className="floating-shape shape-2"></div>
+        <div className="floating-shape shape-3"></div>
+        <div className="floating-shape shape-4"></div>
+        <div className="floating-shape shape-5"></div>
+        <div className="floating-shape shape-6"></div>
+        <div className="floating-shape shape-7"></div>
+        <div className="floating-shape shape-8"></div>
+      </div>
+
+      {/* Header Premium with Glassmorphism */}
+      <div className="header-premium">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <div className="logo-header">
+                  <Building2 className="h-6 w-6 text-white" />
+                </div>
+                <div className="hidden sm:block">
+                  <h1 className="header-title">Sistema de Agendamento</h1>
+                  <p className="header-subtitle">Gestão Inteligente</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Search */}
+            <div className="hidden md:flex items-center space-x-4">
+              <div className="search-container">
+                <Search className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Buscar salas, reservas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+              <button className="header-action-btn">
+                <Bell className="h-5 w-5" />
+              </button>
+              <button className="header-action-btn">
+                <Settings className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* User Profile & Mobile Menu */}
+            <div className="flex items-center space-x-3">
+              <div className="hidden sm:flex items-center space-x-3 pl-4 border-l border-white/20">
+                <div className="text-right">
+                  <p className="user-name">Olá, {user?.first_name || user?.username || 'Usuário'}</p>
+                  <p className="user-role">Administrador</p>
+                </div>
+                <div className="user-avatar">
+                  {(user?.first_name || user?.username || 'U')[0].toUpperCase()}
+                </div>
+                <button
+                  onClick={logout}
+                  className="logout-btn"
+                  title="Sair"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="mobile-menu-btn"
+              >
+                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Menu */}
+          {isMobileMenuOpen && (
+            <div className="mobile-menu">
+              <div className="space-y-3">
+                <div className="search-container-mobile">
+                  <Search className="search-icon-mobile" />
+                  <input
+                    type="text"
+                    placeholder="Buscar..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="search-input-mobile"
+                  />
+                </div>
+                <div className="mobile-user-profile">
+                  <div className="flex items-center space-x-3">
+                    <div className="mobile-avatar">
+                      {(user?.first_name || user?.username || 'U')[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="mobile-user-name">{user?.first_name || user?.username || 'Usuário'}</p>
+                      <p className="mobile-user-role">Administrador</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="mobile-logout-btn"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main Content with Glassmorphism */}
+      <div className="main-content">
+        {/* Welcome Section */}
+        <div className="welcome-section">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="welcome-title">
+                Bem-vindo de volta! 👋
+              </h2>
+              <p className="welcome-subtitle">
+                Aqui está um resumo das suas atividades e do sistema hoje.
+              </p>
+            </div>
+            <div className="system-status">
+              <Wifi className="h-4 w-4" />
+              <span className="text-sm font-medium">Sistema Online</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid Premium */}
+        <div className="stats-grid">
+          <StatCard
+            icon={Calendar}
+            title="Minhas Reservas"
+            value={stats.minhasReservas}
+            subtitle="ativas hoje"
+            color="blue"
+            trend="+12%"
+            onClick={() => navigate('/reservas')}
+          />
+          <StatCard
+            icon={Building2}
+            title="Total de Salas"
+            value={stats.totalSalas}
+            subtitle="no sistema"
+            color="green"
+            onClick={() => navigate('/salas')}
+          />
+          <StatCard
+            icon={Users}
+            title="Salas Ocupadas"
+            value={stats.salasOcupadas}
+            subtitle="em uso agora"
+            color="orange"
+          />
+          <StatCard
+            icon={Clock}
+            title="Salas Disponíveis"
+            value={stats.salasDisponiveis}
+            subtitle="livres agora"
+            color="purple"
+          />
+        </div>
+
+        {/* Main Grid */}
+        <div className="main-grid">
+          {/* Próximas Reservas */}
+          <div className="reservas-card">
+            <div className="card-header">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <CalendarDays className="h-6 w-6 text-blue-600" />
+                  <h3 className="card-title">Próximas Reservas</h3>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button className="filter-btn">
+                    <Filter className="h-4 w-4" />
+                  </button>
+                  <button 
+                    onClick={() => navigate('/nova-reserva')}
+                    className="new-reservation-btn"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Reserva
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="card-content">
+              {reservasProximas.length > 0 ? (
+                <div className="space-y-4">
+                  {reservasProximas.map((reserva) => (
+                    <ReservaCard key={reserva.id} reserva={reserva} />
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <div className="empty-icon">
+                    <Calendar className="h-12 w-12 text-blue-600" />
+                  </div>
+                  <h3 className="empty-title">Nenhuma reserva próxima</h3>
+                  <p className="empty-subtitle">Você não tem reservas agendadas no momento</p>
+                  <button 
+                    onClick={() => navigate('/nova-reserva')}
+                    className="create-reservation-btn"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Criar Nova Reserva
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar Premium */}
+          <div className="sidebar-premium">
+            {/* Quick Actions */}
+            <div className="quick-actions-card">
+              <div className="sidebar-card-header">
+                <h3 className="sidebar-card-title">Navegação Rápida</h3>
+              </div>
+              <div className="sidebar-card-content">
+                <div className="space-y-3">
+                  <NavigationButton
+                    icon={Home}
+                    label="Dashboard"
+                    onClick={() => navigate('/dashboard')}
+                    active={true}
+                  />
+                  <NavigationButton
+                    icon={Plus}
+                    label="Nova Reserva"
+                    onClick={() => navigate('/nova-reserva')}
+                  />
+                  <NavigationButton
+                    icon={Building2}
+                    label="Gerenciar Salas"
+                    onClick={() => navigate('/salas')}
+                  />
+                  <NavigationButton
+                    icon={CalendarCheck}
+                    label="Todas as Reservas"
+                    onClick={() => navigate('/reservas')}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* System Status Premium */}
+            <div className="status-card">
+              <div className="sidebar-card-header">
+                <h3 className="sidebar-card-title">Status do Sistema</h3>
+              </div>
+              <div className="sidebar-card-content">
+                <div className="space-y-4">
+                  <div className="status-item">
+                    <div className="flex items-center space-x-2">
+                      <div className="status-indicator status-online"></div>
+                      <span className="status-label">Sistema</span>
+                    </div>
+                    <span className="status-badge status-online-badge">
+                      Online
+                    </span>
+                  </div>
+                  <div className="status-item">
+                    <div className="flex items-center space-x-2">
+                      <Activity className="h-4 w-4 text-blue-500" />
+                      <span className="status-label">Performance</span>
+                    </div>
+                    <span className="status-value">Excelente</span>
+                  </div>
+                  <div className="status-item">
+                    <div className="flex items-center space-x-2">
+                      <Shield className="h-4 w-4 text-purple-500" />
+                      <span className="status-label">Segurança</span>
+                    </div>
+                    <span className="status-value">Protegido</span>
+                  </div>
+                  <div className="status-item">
+                    <div className="flex items-center space-x-2">
+                      <Zap className="h-4 w-4 text-yellow-500" />
+                      <span className="status-label">Última atualização</span>
+                    </div>
+                    <span className="status-time">Agora mesmo</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="stats-card">
+              <div className="stats-card-header">
+                <Star className="h-6 w-6 text-yellow-300" />
+                <h3 className="stats-card-title">Estatísticas</h3>
+              </div>
+              <div className="stats-card-content">
+                <div className="stat-row">
+                  <span className="stat-label">Taxa de ocupação</span>
+                  <span className="stat-value">
+                    {stats.totalSalas > 0 ? Math.round((stats.salasOcupadas / stats.totalSalas) * 100) : 0}%
+                  </span>
+                </div>
+                <div className="stat-row">
+                  <span className="stat-label">Eficiência</span>
+                  <span className="stat-value">95%</span>
+                </div>
+                <div className="stat-row">
+                  <span className="stat-label">Satisfação</span>
+                  <span className="stat-value">4.8/5</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .dashboard-container {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          position: relative;
+          overflow-x: hidden;
+        }
+
+        .animated-background {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          z-index: 0;
+          pointer-events: none;
+        }
+
+        .floating-shape {
+          position: absolute;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.1);
+          animation: float 8s ease-in-out infinite;
+        }
+
+        .shape-1 {
+          width: 80px;
+          height: 80px;
+          top: 10%;
+          left: 10%;
+          animation-delay: 0s;
+        }
+
+        .shape-2 {
+          width: 120px;
+          height: 120px;
+          top: 20%;
+          right: 15%;
+          animation-delay: 1s;
+        }
+
+        .shape-3 {
+          width: 60px;
+          height: 60px;
+          bottom: 30%;
+          left: 20%;
+          animation-delay: 2s;
+        }
+
+        .shape-4 {
+          width: 100px;
+          height: 100px;
+          bottom: 20%;
+          right: 10%;
+          animation-delay: 3s;
+        }
+
+        .shape-5 {
+          width: 140px;
+          height: 140px;
+          top: 50%;
+          left: 5%;
+          animation-delay: 4s;
+        }
+
+        .shape-6 {
+          width: 90px;
+          height: 90px;
+          top: 70%;
+          right: 25%;
+          animation-delay: 2.5s;
+        }
+
+        .shape-7 {
+          width: 110px;
+          height: 110px;
+          top: 15%;
+          left: 50%;
+          animation-delay: 1.5s;
+        }
+
+        .shape-8 {
+          width: 70px;
+          height: 70px;
+          bottom: 15%;
+          left: 40%;
+          animation-delay: 3.5s;
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+            opacity: 0.7;
+          }
+          50% {
+            transform: translateY(-20px) rotate(180deg);
+            opacity: 1;
+          }
+        }
+
+        .header-premium {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(20px);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+          position: sticky;
+          top: 0;
+          z-index: 50;
+          animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .logo-header {
+          padding: 8px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 12px;
+          box-shadow: 0 8px 20px -5px rgba(102, 126, 234, 0.4);
+        }
+
+        .header-title {
+          font-size: 1.25rem;
+          font-weight: bold;
+          color: white;
+          margin: 0;
+        }
+
+        .header-subtitle {
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.8);
+          margin: 0;
+        }
+
+        .search-container {
+          position: relative;
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 16px;
+          height: 16px;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-input {
+          padding-left: 40px;
+          padding-right: 16px;
+          padding-top: 8px;
+          padding-bottom: 8px;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 12px;
+          color: white;
+          font-size: 0.875rem;
+          transition: all 0.3s ease;
+          outline: none;
+          backdrop-filter: blur(10px);
+        }
+
+        .search-input::placeholder {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-input:focus {
+          border-color: rgba(255, 255, 255, 0.4);
+          background: rgba(255, 255, 255, 0.15);
+          box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+
+        .header-action-btn {
+          padding: 8px;
+          color: rgba(255, 255, 255, 0.7);
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .header-action-btn:hover {
+          color: white;
+          background: rgba(255, 255, 255, 0.2);
+          transform: translateY(-2px);
+        }
+
+        .user-name {
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: white;
+          margin: 0;
+        }
+
+        .user-role {
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.7);
+          margin: 0;
+        }
+
+        .user-avatar {
+          width: 40px;
+          height: 40px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 0.875rem;
+          font-weight: bold;
+          box-shadow: 0 8px 20px -5px rgba(102, 126, 234, 0.4);
+        }
+
+        .logout-btn {
+          padding: 8px;
+          color: rgba(255, 255, 255, 0.7);
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+          color: #ef4444;
+          background: rgba(239, 68, 68, 0.1);
+        }
+
+        .mobile-menu-btn {
+          display: block;
+          padding: 8px;
+          color: rgba(255, 255, 255, 0.8);
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .mobile-menu-btn:hover {
+          color: white;
+          background: rgba(255, 255, 255, 0.2);
+        }
+
+        @media (min-width: 640px) {
+          .mobile-menu-btn {
+            display: none;
+          }
+        }
+
+        .mobile-menu {
+          padding: 16px 0;
+          border-top: 1px solid rgba(255, 255, 255, 0.2);
+          animation: slideDown 0.3s ease-out;
+        }
+
+        @media (min-width: 640px) {
+          .mobile-menu {
+            display: none;
+          }
+        }
+
+        .search-container-mobile {
+          position: relative;
+        }
+
+        .search-icon-mobile {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 16px;
+          height: 16px;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-input-mobile {
+          width: 100%;
+          padding-left: 40px;
+          padding-right: 16px;
+          padding-top: 8px;
+          padding-bottom: 8px;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 12px;
+          color: white;
+          font-size: 0.875rem;
+          outline: none;
+        }
+
+        .search-input-mobile::placeholder {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .mobile-user-profile {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+        }
+
+        .mobile-avatar {
+          width: 32px;
+          height: 32px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 0.75rem;
+          font-weight: bold;
+        }
+
+        .mobile-user-name {
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: white;
+          margin: 0;
+        }
+
+        .mobile-user-role {
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.7);
+          margin: 0;
+        }
+
+        .mobile-logout-btn {
+          padding: 8px;
+          color: #ef4444;
+          background: rgba(239, 68, 68, 0.1);
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .mobile-logout-btn:hover {
+          background: rgba(239, 68, 68, 0.2);
+        }
+
+        .main-content {
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: 32px 16px;
+          position: relative;
+          z-index: 1;
+        }
+
+        @media (min-width: 640px) {
+          .main-content {
+            padding: 32px 24px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .main-content {
+            padding: 32px 32px;
+          }
+        }
+
+        .welcome-section {
+          margin-bottom: 32px;
+          animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .welcome-title {
+          font-size: 2rem;
+          font-weight: bold;
+          color: white;
+          margin-bottom: 8px;
+        }
+
+        @media (min-width: 768px) {
+          .welcome-title {
+            font-size: 2.5rem;
+          }
+        }
+
+        .welcome-subtitle {
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 1rem;
+        }
+
+        .system-status {
+          display: none;
+          align-items: center;
+          gap: 8px;
+          color: #10b981;
+          background: rgba(16, 185, 129, 0.1);
+          padding: 8px 16px;
+          border-radius: 12px;
+          backdrop-filter: blur(10px);
+        }
+
+        @media (min-width: 640px) {
+          .system-status {
+            display: flex;
+          }
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 24px;
+          margin-bottom: 32px;
+          animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        @media (min-width: 768px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (min-width: 1280px) {
+          .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+
+        .stat-card {
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+          border-radius: 20px;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          padding: 24px;
+          transition: all 0.3s ease;
+          cursor: pointer;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .stat-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          transform: scaleX(0);
+          transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card:hover::before {
+          transform: scaleX(1);
+        }
+
+        .stat-card-clickable:hover {
+          border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-icon {
+          padding: 16px;
+          border-radius: 16px;
+          transition: all 0.3s ease;
+        }
+
+        .stat-card:hover .stat-icon {
+          transform: scale(1.1);
+        }
+
+        .stat-icon-blue {
+          background: rgba(59, 130, 246, 0.1);
+          color: #3b82f6;
+        }
+
+        .stat-icon-green {
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
+        }
+
+        .stat-icon-orange {
+          background: rgba(249, 115, 22, 0.1);
+          color: #f97316;
+        }
+
+        .stat-icon-purple {
+          background: rgba(147, 51, 234, 0.1);
+          color: #9333ea;
+        }
+
+        .stat-title {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #6b7280;
+          margin-bottom: 4px;
+        }
+
+        .stat-value {
+          font-size: 2rem;
+          font-weight: bold;
+          color: #111827;
+          transition: color 0.3s ease;
+        }
+
+        .stat-card:hover .stat-value {
+          color: #3b82f6;
+        }
+
+        .stat-subtitle {
+          font-size: 0.75rem;
+          color: #9ca3af;
+          margin-top: 4px;
+        }
+
+        .stat-trend {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          color: #10b981;
+          background: rgba(16, 185, 129, 0.1);
+          padding: 4px 12px;
+          border-radius: 20px;
+        }
+
+        .stat-arrow {
+          width: 20px;
+          height: 20px;
+          color: #9ca3af;
+          transition: color 0.3s ease;
+        }
+
+        .stat-card:hover .stat-arrow {
+          color: #3b82f6;
+        }
+
+        .main-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 32px;
+        }
+
+        @media (min-width: 1280px) {
+          .main-grid {
+            grid-template-columns: 2fr 1fr;
+          }
+        }
+
+        .reservas-card {
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+          border-radius: 20px;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          animation: fadeInUp 0.6s ease-out 0.4s both;
+        }
+
+        @media (min-width: 1280px) {
+          .reservas-card {
+            grid-column: span 1;
+          }
+        }
+
+        .card-header {
+          padding: 24px;
+          border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+        }
+
+        .card-title {
+          font-size: 1.25rem;
+          font-weight: bold;
+          color: #111827;
+        }
+
+        .filter-btn {
+          padding: 8px;
+          color: #9ca3af;
+          background: rgba(156, 163, 175, 0.1);
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+          color: #6b7280;
+          background: rgba(107, 114, 128, 0.1);
+        }
+
+        .new-reservation-btn {
+          display: inline-flex;
+          align-items: center;
+          padding: 8px 16px;
+          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+          color: white;
+          border-radius: 12px;
+          border: none;
+          font-size: 0.875rem;
+          font-weight: 500;
+          box-shadow: 0 4px 15px -3px rgba(59, 130, 246, 0.4);
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .new-reservation-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px -3px rgba(59, 130, 246, 0.6);
+        }
+
+        .card-content {
+          padding: 24px;
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 48px 0;
+        }
+
+        .empty-icon {
+          width: 96px;
+          height: 96px;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 24px;
+        }
+
+        .empty-title {
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: #111827;
+          margin-bottom: 8px;
+        }
+
+        .empty-subtitle {
+          color: #6b7280;
+          margin-bottom: 24px;
+        }
+
+        .create-reservation-btn {
+          display: inline-flex;
+          align-items: center;
+          padding: 12px 24px;
+          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+          color: white;
+          border-radius: 12px;
+          border: none;
+          font-weight: 500;
+          box-shadow: 0 8px 20px -5px rgba(59, 130, 246, 0.4);
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .create-reservation-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 30px -5px rgba(59, 130, 246, 0.6);
+        }
+
+        .reserva-card {
+          background: rgba(255, 255, 255, 0.8);
+          border: 1px solid rgba(229, 231, 235, 0.5);
+          border-radius: 12px;
+          padding: 20px;
+          transition: all 0.3s ease;
+          cursor: pointer;
+        }
+
+        .reserva-card:hover {
+          box-shadow: 0 8px 20px -5px rgba(0, 0, 0, 0.1);
+          border-color: rgba(59, 130, 246, 0.3);
+          transform: translateY(-2px);
+        }
+
+        .reserva-status {
+          padding: 12px;
+          border-radius: 8px;
+        }
+
+        .reserva-status-confirmed {
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
+        }
+
+        .reserva-status-pending {
+          background: rgba(245, 158, 11, 0.1);
+          color: #f59e0b;
+        }
+
+        .reserva-title {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #111827;
+          transition: color 0.3s ease;
+        }
+
+        .reserva-card:hover .reserva-title {
+          color: #3b82f6;
+        }
+
+        .reserva-info {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          color: #6b7280;
+        }
+
+        .reserva-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 500;
+          margin-top: 12px;
+        }
+
+        .reserva-badge-today {
+          background: rgba(59, 130, 246, 0.1);
+          color: #3b82f6;
+        }
+
+        .reserva-badge-default {
+          background: rgba(107, 114, 128, 0.1);
+          color: #374151;
+        }
+
+        .reserva-chevron {
+          width: 20px;
+          height: 20px;
+          color: #9ca3af;
+          transition: color 0.3s ease;
+        }
+
+        .reserva-card:hover .reserva-chevron {
+          color: #3b82f6;
+        }
+
+        .sidebar-premium {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .quick-actions-card, .status-card {
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+          border-radius: 20px;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          animation: fadeInUp 0.6s ease-out 0.6s both;
+        }
+
+        .stats-card {
+          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+          border-radius: 20px;
+          box-shadow: 0 15px 35px -5px rgba(59, 130, 246, 0.4);
+          color: white;
+          padding: 24px;
+          animation: fadeInUp 0.6s ease-out 0.8s both;
+        }
+
+        .sidebar-card-header {
+          padding: 24px;
+          border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+        }
+
+        .sidebar-card-title {
+          font-size: 1.125rem;
+          font-weight: bold;
+          color: #111827;
+          margin: 0;
+        }
+
+        .sidebar-card-content {
+          padding: 24px;
+        }
+
+        .nav-button {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 16px;
+          text-align: left;
+          border-radius: 12px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .nav-button:hover {
+          background: rgba(107, 114, 128, 0.05);
+          color: #374151;
+        }
+
+        .nav-button-active {
+          background: rgba(59, 130, 246, 0.1);
+          color: #3b82f6;
+          border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .status-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .status-indicator {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+        }
+
+        .status-online {
+          background: #10b981;
+        }
+
+        .status-label {
+          font-size: 0.875rem;
+          color: #6b7280;
+        }
+
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 2px 12px;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+
+        .status-online-badge {
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
+        }
+
+        .status-value {
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: #111827;
+        }
+
+        .status-time {
+          font-size: 0.75rem;
+          color: #6b7280;
+        }
+
+        .stats-card-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .stats-card-title {
+          font-size: 1.125rem;
+          font-weight: bold;
+          margin: 0;
+        }
+
+        .stats-card-content {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .stat-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .stat-label {
+          color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stat-value {
+          font-weight: bold;
+        }
+
+        .loading-container {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .loading-spinner {
+          animation: spin 1s linear infinite;
+          border-radius: 50%;
+          width: 64px;
+          height: 64px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top: 2px solid white;
+          margin: 0 auto;
+        }
+
+        .loading-icon {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .loading-text {
+          margin-top: 16px;
+          color: white;
+          font-weight: 500;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+          .main-content {
+            padding: 16px;
+          }
+          
+          .stats-grid {
+            gap: 16px;
+          }
+          
+          .stat-card {
+            padding: 20px;
+          }
+          
+          .welcome-title {
+            font-size: 1.5rem;
+          }
+          
+          .card-header, .card-content, .sidebar-card-header, .sidebar-card-content {
+            padding: 16px;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default Dashboard;

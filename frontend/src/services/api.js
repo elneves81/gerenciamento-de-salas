@@ -9,7 +9,8 @@ const api = axios.create({
   },
 });
 
-// Interceptor para refresh token
+// Interceptor para refresh token - TEMPORARIAMENTE DESABILITADO
+/*
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -42,5 +43,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+*/
 
 export default api;

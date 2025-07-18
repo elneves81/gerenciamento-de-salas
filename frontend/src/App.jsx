@@ -1,11 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Header from './components/Header';
-import Dashboard from './pages/Dashboard';
+import HeaderPremium from './components/HeaderPremium';
+import Dashboard from './pages/DashboardPremium';
 import Salas from './pages/Salas';
 import Reservas from './pages/Reservas';
-import Login from './pages/Login';
+import Login from './pages/LoginNovo';
 import NovaReserva from './pages/NovaReserva';
 
 function App() {
@@ -37,17 +37,35 @@ function AppContent() {
 
   return (
     <>
-      <Header />
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/salas" element={<Salas />} />
-          <Route path="/reservas" element={<Reservas />} />
-          <Route path="/nova-reserva" element={<NovaReserva />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </main>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/salas" element={
+          <>
+            <HeaderPremium currentPage="salas" />
+            <main className="min-h-screen pt-4">
+              <Salas />
+            </main>
+          </>
+        } />
+        <Route path="/reservas" element={
+          <>
+            <HeaderPremium currentPage="reservas" />
+            <main className="min-h-screen pt-4">
+              <Reservas />
+            </main>
+          </>
+        } />
+        <Route path="/nova-reserva" element={
+          <>
+            <HeaderPremium currentPage="nova-reserva" />
+            <main className="min-h-screen pt-4">
+              <NovaReserva />
+            </main>
+          </>
+        } />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
     </>
   );
 }

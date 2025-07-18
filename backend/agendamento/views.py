@@ -17,22 +17,30 @@ class AuthView(APIView):
     permission_classes = [permissions.AllowAny]
     
     def post(self, request):
-        username = request.data.get('username')
+        identifier = request.data.get('email') or request.data.get('username')
         password = request.data.get('password')
-        
-        if not username or not password:
+
+        if not identifier or not password:
             return Response({
-                'error': 'Username e password são obrigatórios'
+                'error': 'Email/Username e password são obrigatórios'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
-        user = authenticate(username=username, password=password)
-        
+
+        # Tenta autenticar por username
+        user = authenticate(username=identifier, password=password)
+
+        # Se falhar, tenta autenticar por email
+        if not user:
+            try:
+                # Pega apenas o primeiro usuário com esse email (para lidar com duplicatas)
+                user_obj = User.objects.filter(email__iexact=identifier).first()
+                if user_obj:
+                    user = authenticate(username=user_obj.username, password=password)
+            except Exception:
+                user = None
+
         if user:
             refresh = RefreshToken.for_user(user)
-            
-            # Criar ou buscar perfil do usuário
             perfil, created = PerfilUsuario.objects.get_or_create(usuario=user)
-            
             return Response({
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
