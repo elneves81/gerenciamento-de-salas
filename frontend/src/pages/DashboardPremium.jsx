@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 import {
   Box,
   Grid,
@@ -35,8 +37,10 @@ import {
   Snackbar,
   Tabs,
   Tab,
-  Collapse
+  Collapse,
+  Switch
 } from '@mui/material';
+import '../styles/darkMode.css';
 import {
   MeetingRoom,
   Event,
@@ -58,6 +62,9 @@ import {
   EventBusy,
   AccessTime,
   LocationOn,
+  DarkMode,
+  LightMode,
+  Close,
   PersonAdd,
   Edit,
   Delete,
@@ -70,7 +77,8 @@ import {
   PieChart,
   ExpandMore,
   ExpandLess,
-  Assessment
+  Assessment,
+  Logout
 } from '@mui/icons-material';
 import { format, isToday, isTomorrow, parseISO, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -78,22 +86,29 @@ import api from '../services/api';
 
 const DashboardPremium = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  
+  // Estados principais
   const [userData, setUserData] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [salas, setSalas] = useState([]);
   const [proximasReservas, setProximasReservas] = useState([]);
   const [reservasHoje, setReservasHoje] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Estados de UI
+  const [darkMode, setDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
   const [selectedPeriod, setSelectedPeriod] = useState('hoje');
   const [quickActionDialog, setQuickActionDialog] = useState(false);
   const [notificationDialog, setNotificationDialog] = useState(false);
+  const [settingsDialog, setSettingsDialog] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [activeTab, setActiveTab] = useState(0);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [allReservas, setAllReservas] = useState([]);
-
+  
   // Estados para nova reserva rápida
   const [quickReserva, setQuickReserva] = useState({
     titulo: '',
@@ -102,11 +117,41 @@ const DashboardPremium = () => {
     data_fim: '',
     participantes: 1
   });
+  
+  // Função de logout
+  const handleLogout = () => {
+    logout();
+  };
+  
+  // Função para alternar entre modo claro e escuro
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    localStorage.setItem('darkMode', newDarkMode.toString());
+    document.body.classList.toggle('dark-mode', newDarkMode);
+    showSnackbar(`Modo ${newDarkMode ? 'escuro' : 'claro'} ativado`, 'success');
+  };
+  
+  // Função para recarregar os dados
+  const handleRefresh = () => {
+    setLoading(true);
+    loadAllData();
+  };
+  
+  // Aplicar o modo escuro na inicialização
+  useEffect(() => {
+    document.body.classList.toggle('dark-mode', darkMode);
+  }, [darkMode]);
 
   useEffect(() => {
     loadAllData();
-    // Atualizar dados a cada 30 segundos
-    const interval = setInterval(loadAllData, 30000);
+    // Atualizar dados a cada 30 segundos apenas se o usuário estiver logado
+    const interval = setInterval(() => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        loadAllData();
+      }
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -115,7 +160,7 @@ const DashboardPremium = () => {
       setRefreshing(true);
       const token = localStorage.getItem('token');
       if (!token) {
-        setError('Token não encontrado - faça login novamente');
+        logout();
         return;
       }
 
@@ -263,7 +308,7 @@ const DashboardPremium = () => {
               </Avatar>
               <Box>
                 <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
-                  Dashboard Premium
+                  SalaFácil <span style={{fontWeight:400, fontSize:'1.5rem'}}>– Gestão de Salas</span>
                 </Typography>
                 <Typography variant="h6" sx={{ opacity: 0.9 }}>
                   Bem-vindo(a), {userData?.first_name || 'Usuário'}!
@@ -281,10 +326,33 @@ const DashboardPremium = () => {
               </Box>
             </Box>
             
-            <Box display="flex" gap={1}>
+            <Box display="flex" gap={1} alignItems="center">
+              {/* Botão de Logout */}
+              <Tooltip title="Sair do Sistema">
+                <Button
+                  onClick={handleLogout}
+                  startIcon={<Logout />}
+                  sx={{
+                    bgcolor: 'rgba(255,255,255,0.15)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    borderRadius: 2,
+                    px: 2,
+                    py: 1,
+                    boxShadow: 2,
+                    textTransform: 'none',
+                    '&:hover': {
+                      bgcolor: 'rgba(255,255,255,0.25)',
+                      color: '#f5576c',
+                    },
+                  }}
+                >
+                  Sair
+                </Button>
+              </Tooltip>
               <Tooltip title="Atualizar dados">
                 <IconButton 
-                  onClick={loadAllData} 
+                  onClick={handleRefresh} 
                   disabled={refreshing}
                   sx={{ color: 'white' }}
                 >
@@ -302,8 +370,19 @@ const DashboardPremium = () => {
                 </IconButton>
               </Tooltip>
               <Tooltip title="Configurações">
-                <IconButton sx={{ color: 'white' }}>
+                <IconButton 
+                  onClick={() => setSettingsDialog(true)}
+                  sx={{ color: 'white' }}
+                >
                   <Settings />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={darkMode ? "Modo Claro" : "Modo Escuro"}>
+                <IconButton 
+                  onClick={toggleDarkMode}
+                  sx={{ color: 'white' }}
+                >
+                  {darkMode ? <LightMode /> : <DarkMode />}
                 </IconButton>
               </Tooltip>
             </Box>
@@ -939,6 +1018,129 @@ const DashboardPremium = () => {
           onClose={() => setSnackbar({...snackbar, open: false})}
         >
           <Alert severity={snackbar.severity} onClose={() => setSnackbar({...snackbar, open: false})}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+
+        {/* Diálogo de Notificações */}
+        <Dialog open={notificationDialog} onClose={() => setNotificationDialog(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Typography variant="h6">Notificações</Typography>
+              <IconButton onClick={() => setNotificationDialog(false)} size="small">
+                <Close />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent dividers>
+            {proximasReservas.length > 0 ? (
+              <List>
+                {proximasReservas.slice(0, 5).map((reserva) => (
+                  <ListItem key={reserva.id} alignItems="flex-start">
+                    <ListItemAvatar>
+                      <Avatar sx={{ bgcolor: getStatusColor(reserva.status) + '.main' }}>
+                        {getStatusIcon(reserva.status)}
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={reserva.titulo}
+                      secondary={
+                        <>
+                          <Typography component="span" variant="body2" color="text.primary">
+                            {reserva.sala_nome}
+                          </Typography>
+                          {" — "}
+                          {formatDateTime(reserva.data_inicio)}
+                        </>
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Box sx={{ py: 4, textAlign: 'center' }}>
+                <Notifications sx={{ fontSize: 60, color: 'text.secondary', mb: 2, opacity: 0.3 }} />
+                <Typography variant="body1" color="text.secondary">
+                  Nenhuma notificação no momento
+                </Typography>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setNotificationDialog(false)}>Fechar</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Diálogo de Configurações */}
+        <Dialog open={settingsDialog} onClose={() => setSettingsDialog(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Typography variant="h6">Configurações</Typography>
+              <IconButton onClick={() => setSettingsDialog(false)} size="small">
+                <Close />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent dividers>
+            <List>
+              <ListItem>
+                <ListItemText 
+                  primary="Tema" 
+                  secondary="Altere entre modo claro e escuro"
+                />
+                <Switch 
+                  edge="end"
+                  checked={darkMode}
+                  onChange={toggleDarkMode}
+                  color="primary"
+                />
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText 
+                  primary="Notificações" 
+                  secondary="Receber notificações do sistema"
+                />
+                <Switch edge="end" defaultChecked color="primary" />
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText 
+                  primary="Atualização Automática" 
+                  secondary="Atualizar dados a cada 30 segundos"
+                />
+                <Switch edge="end" defaultChecked color="primary" />
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText 
+                  primary="Versão do Sistema" 
+                  secondary="SalaFácil v1.0.0"
+                />
+              </ListItem>
+            </List>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setSettingsDialog(false)}>Fechar</Button>
+            <Button onClick={() => setSettingsDialog(false)} variant="contained" color="primary">
+              Salvar Alterações
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar para notificações do sistema */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <Alert 
+            onClose={() => setSnackbar({ ...snackbar, open: false })} 
+            severity={snackbar.severity}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
             {snackbar.message}
           </Alert>
         </Snackbar>

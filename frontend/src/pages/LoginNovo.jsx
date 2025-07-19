@@ -42,10 +42,16 @@ const Login = () => {
       <div className="login-card">
         {/* Welcome Header */}
         <div className="login-header">
-          <h1 className="welcome-text">Welcome</h1>
+          <h1 className="welcome-text">Bem-vindo ao SalaFácil</h1>
           <div className="logo-container">
-            <div className="logo">A</div>
+            <div className="logo">SF</div>
           </div>
+        </div>
+
+        {/* Professional Subtitle */}
+        <div className="subtitle-container">
+          <p className="subtitle-text">Sistema Inteligente de Gestão de Salas</p>
+          <p className="subtitle-description">Acesse sua conta para gerenciar reservas e otimizar o uso dos espaços</p>
         </div>
 
         {/* Error Message */}
@@ -238,6 +244,27 @@ const Login = () => {
           box-shadow: 0 10px 25px -5px rgba(102, 126, 234, 0.4);
         }
 
+        .subtitle-container {
+          text-align: center;
+          margin-bottom: 32px;
+          padding: 0 20px;
+        }
+
+        .subtitle-text {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #2d3748;
+          margin-bottom: 8px;
+          letter-spacing: 0.2px;
+        }
+
+        .subtitle-description {
+          font-size: 0.9rem;
+          color: #718096;
+          line-height: 1.5;
+          margin: 0;
+        }
+
         .error-message {
           background: rgba(248, 113, 113, 0.1);
           border: 1px solid rgba(248, 113, 113, 0.3);
@@ -392,6 +419,15 @@ const Login = () => {
             width: 50px;
             height: 50px;
             font-size: 1.25rem;
+          }
+
+          .subtitle-text {
+            font-size: 1rem;
+          }
+
+          .subtitle-description {
+            font-size: 0.85rem;
+            padding: 0 10px;
           }
         }
 

@@ -121,10 +121,11 @@ const Header = ({ title = "Sistema de Agendamento", currentPage = "dashboard" })
               </div>
               <button
                 onClick={logout}
-                className="p-2 text-gray-400 hover:text-red-600 rounded-xl hover:bg-red-50 transition-colors"
-                title="Sair"
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-xl shadow-md hover:from-red-600 hover:to-pink-600 transition-all duration-200 border-2 border-transparent hover:border-red-700"
+                title="Sair do Sistema"
               >
                 <LogOut className="h-4 w-4" />
+                <span>Sair</span>
               </button>
             </div>
 
@@ -197,9 +198,11 @@ const Header = ({ title = "Sistema de Agendamento", currentPage = "dashboard" })
                 </div>
                 <button
                   onClick={logout}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg shadow-md hover:from-red-600 hover:to-pink-600 transition-all duration-200 border-2 border-transparent hover:border-red-700"
+                  title="Sair do Sistema"
                 >
                   <LogOut className="h-4 w-4" />
+                  <span>Sair</span>
                 </button>
               </div>
             </div>

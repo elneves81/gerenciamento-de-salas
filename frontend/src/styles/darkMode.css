@@ -1,0 +1,94 @@
+/* Estilos para o modo escuro */
+body.dark-mode {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+/* Estilos para os componentes Material-UI no modo escuro */
+body.dark-mode .MuiPaper-root {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+body.dark-mode .MuiTypography-root {
+  color: #e0e0e0;
+}
+
+body.dark-mode .MuiCard-root {
+  background-color: #2d2d2d;
+}
+
+body.dark-mode .MuiInputBase-input {
+  color: #e0e0e0;
+}
+
+body.dark-mode .MuiInputLabel-root {
+  color: #a0a0a0;
+}
+
+body.dark-mode .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(255, 255, 255, 0.23);
+}
+
+body.dark-mode .MuiListItem-root {
+  color: #e0e0e0;
+}
+
+body.dark-mode .MuiDialogContent-root {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+body.dark-mode .MuiDialogTitle-root {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .MuiDialogActions-root {
+  background-color: #1e1e1e;
+}
+
+body.dark-mode .MuiDivider-root {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Para garantir que o texto secundário tenha cor apropriada */
+body.dark-mode .MuiTypography-colorTextSecondary {
+  color: #a0a0a0;
+}
+
+/* Para garantir que os ícones tenham cor apropriada */
+body.dark-mode .MuiSvgIcon-root {
+  color: #e0e0e0;
+}
+
+/* Ajustes para cards e botões gradientes */
+body.dark-mode .login-card {
+  background: rgba(30, 30, 30, 0.95);
+}
+
+/* Ajuste para inputs no modo escuro */
+body.dark-mode .form-input {
+  background: rgba(45, 45, 45, 0.8);
+  border-color: rgba(80, 80, 80, 0.5);
+  color: #e0e0e0;
+}
+
+body.dark-mode .form-input::placeholder {
+  color: #909090;
+}
+
+body.dark-mode .form-input:focus {
+  background: rgba(50, 50, 50, 0.9);
+  border-color: #667eea;
+}
+
+/* Animação para o ícone de atualizar */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
