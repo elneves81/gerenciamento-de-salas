@@ -1,23 +1,54 @@
-# Arquivos e pastas a serem ignorados pelo Git
+# 🚫 SalaFácil - Arquivos Ignorados pelo Git
 
-# Dependências Node.js
-frontend/node_modules/
-frontend/dist/
-frontend/build/
+# === PYTHON/DJANGO ===
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
-# Ambiente virtual Python
+# Django specific
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+
+# Environment variables
+.env
+.venv
+venv/
+env/
+ENV/
 backend/venv/
 backend/env/
 backend/.env
 
-# Arquivos de banco de dados
-backend/db.sqlite3
-backend/*.sqlite3
+# === NODE.JS/REACT ===
+# Dependencies
+node_modules/
+frontend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Arquivos de configuração local
+# Build outputs
+frontend/dist/
+frontend/build/
+build/
+dist/
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+
+# === IDE & EDITORS ===
 .vscode/
 .idea/
 *.swp
+*.swo
+*~
 *.swo
 
 # Logs
