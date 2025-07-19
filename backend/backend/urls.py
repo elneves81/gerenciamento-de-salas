@@ -1,4 +1,5 @@
 from django.contrib import admin
+from agendamento import admin_custom
 from django.urls import path, include
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
