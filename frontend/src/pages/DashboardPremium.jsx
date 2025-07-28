@@ -92,6 +92,7 @@ const DashboardPremium = () => {
   const [userData, setUserData] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [salas, setSalas] = useState([]);
+  const [reservas, setReservas] = useState([]);
   const [proximasReservas, setProximasReservas] = useState([]);
   const [reservasHoje, setReservasHoje] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -175,15 +176,29 @@ const DashboardPremium = () => {
       
       setUserData(userResponse.data);
       setSalas(Array.isArray(salasResponse.data) ? salasResponse.data : salasResponse.data.results || []);
-      setReservas(Array.isArray(agendamentosResponse.data) ? agendamentosResponse.data : agendamentosResponse.data.results || []);
-      setAllReservas(Array.isArray(agendamentosResponse.data) ? agendamentosResponse.data : agendamentosResponse.data.results || []);
+      
+      const reservasData = Array.isArray(agendamentosResponse.data) ? agendamentosResponse.data : agendamentosResponse.data.results || [];
+      setReservas(reservasData);
+      setAllReservas(reservasData);
       
       // Filtrar reservas de hoje
       const hoje = new Date().toISOString().split('T')[0];
-      const reservasHojeFiltered = agendamentosResponse.data.filter(reserva => 
+      const reservasHojeFiltered = reservasData.filter(reserva => 
         reserva.data_inicio.startsWith(hoje)
       );
       setReservasHoje(reservasHojeFiltered);
+      
+      // Filtrar próximas reservas (próximos 7 dias, excluindo hoje)
+      const agora = new Date();
+      const proximosDias = new Date();
+      proximosDias.setDate(agora.getDate() + 7);
+      
+      const proximasReservasFiltered = reservasData.filter(reserva => {
+        const dataReserva = new Date(reserva.data_inicio);
+        return dataReserva > agora && dataReserva <= proximosDias && reserva.status === 'agendada';
+      }).sort((a, b) => new Date(a.data_inicio) - new Date(b.data_inicio));
+      
+      setProximasReservas(proximasReservasFiltered);
       
       setError(null);
     } catch (err) {
