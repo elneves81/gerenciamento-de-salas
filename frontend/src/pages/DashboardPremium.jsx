@@ -167,24 +167,20 @@ const DashboardPremium = () => {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       // Carregar dados em paralelo
-      const [userResponse, dashboardResponse, salasResponse, reservasResponse, allReservasResponse] = await Promise.all([
-        api.get('/auth/user/'),
-        api.get('/reservas/dashboard/'),
-        api.get('/salas/'),
-        api.get('/reservas/?data_inicio=' + new Date().toISOString().split('T')[0]),
-        api.get('/reservas/')
+      const [userResponse, salasResponse, agendamentosResponse] = await Promise.all([
+        api.get('/auth'),
+        api.get('/salas'),
+        api.get('/agendamentos')
       ]);
       
       setUserData(userResponse.data);
-      setDashboardData(dashboardResponse.data);
       setSalas(Array.isArray(salasResponse.data) ? salasResponse.data : salasResponse.data.results || []);
-      setProximasReservas(dashboardResponse.data.proximas_reservas || []);
-      setAllReservas(Array.isArray(allReservasResponse.data) ? allReservasResponse.data : allReservasResponse.data.results || []);
+      setReservas(Array.isArray(agendamentosResponse.data) ? agendamentosResponse.data : agendamentosResponse.data.results || []);
+      setAllReservas(Array.isArray(agendamentosResponse.data) ? agendamentosResponse.data : agendamentosResponse.data.results || []);
       
-      // Filtrar reservas de hoje - verificar se os dados são um array ou objeto paginado
+      // Filtrar reservas de hoje
       const hoje = new Date().toISOString().split('T')[0];
-      const reservasData = Array.isArray(reservasResponse.data) ? reservasResponse.data : reservasResponse.data.results || [];
-      const reservasHojeFiltered = reservasData.filter(reserva => 
+      const reservasHojeFiltered = agendamentosResponse.data.filter(reserva => 
         reserva.data_inicio.startsWith(hoje)
       );
       setReservasHoje(reservasHojeFiltered);
@@ -201,7 +197,7 @@ const DashboardPremium = () => {
 
   const handleQuickReserva = async () => {
     try {
-      await api.post('/reservas/', quickReserva);
+      await api.post('/agendamentos', quickReserva);
       setQuickActionDialog(false);
       setQuickReserva({
         titulo: '',
@@ -220,7 +216,7 @@ const DashboardPremium = () => {
 
   const cancelarReserva = async (reservaId) => {
     try {
-      await api.post(`/reservas/${reservaId}/cancelar/`);
+      await api.delete(`/agendamentos/${reservaId}`);
       showSnackbar('Reserva cancelada com sucesso!', 'success');
       loadAllData();
     } catch (error) {

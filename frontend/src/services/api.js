@@ -87,7 +87,8 @@ api.interceptors.response.use(
 
       try {
         const parsedRefreshToken = JSON.parse(refreshToken);
-        const response = await axios.post(`${API_CONFIG.BASE_URL}/auth/token/refresh/`, {
+        const response = await axios.post(`${API_CONFIG.BASE_URL}/auth`, {
+          action: 'refresh',
           refresh: parsedRefreshToken
         }, { timeout: 8000 });
 

@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
       
       const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
       
-      const response = await api.get('/auth/user/', {
+      const response = await api.get('/auth', {
         signal: controller.signal
       });
       
@@ -118,7 +118,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await api.post('/auth/login/', {
+      const response = await api.post('/auth', {
+        action: 'login',
         username,
         password,
       });

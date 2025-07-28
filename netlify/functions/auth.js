@@ -45,6 +45,48 @@ exports.handler = async (event, context) => {
   try {
     await client.connect();
     
+    // Se for GET, retornar dados do usuário autenticado
+    if (event.httpMethod === 'GET') {
+      const authHeader = event.headers.authorization;
+      if (!authHeader) {
+        return {
+          statusCode: 401,
+          headers,
+          body: JSON.stringify({ error: 'Token não fornecido' })
+        };
+      }
+
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        const user = await client.query(
+          'SELECT id, username, email, first_name, last_name FROM auth_user WHERE id = $1',
+          [decoded.user_id]
+        );
+
+        if (user.rows.length === 0) {
+          return {
+            statusCode: 401,
+            headers,
+            body: JSON.stringify({ error: 'Usuário não encontrado' })
+          };
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(user.rows[0])
+        };
+      } catch (error) {
+        return {
+          statusCode: 401,
+          headers,
+          body: JSON.stringify({ error: 'Token inválido' })
+        };
+      }
+    }
+    
     const { username, password, action } = JSON.parse(event.body || '{}');
 
     if (action === 'login') {
