@@ -1,8 +1,8 @@
 # Netlify Configuration - SalaFácil
 [build]
   base = "frontend"
-  command = "npm ci && npm run build"
-  publish = "frontend/dist"
+  command = "npm ci && npx vite build"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18"
