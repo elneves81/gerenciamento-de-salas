@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Requisições - SalaFácil</title>
+    <style>
+        body {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,255,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0,255,255,0.5);
+        }
+        .log {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .warning { color: #ffff00; }
+        .info { color: #00ffff; }
+        .btn {
+            background: #0066cc;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover { background: #0088ff; }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Monitor de Requisições HTTP</h1>
+        
+        <div class="status-bar">
+            <div>Status: <span id="status">Iniciando...</span></div>
+            <div>Tempo: <span id="time"></span></div>
+            <div>Requisições: <span id="count">0</span></div>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <button class="btn" onclick="startMonitoring()">🚀 Iniciar Monitoramento</button>
+            <button class="btn" onclick="clearLog()">🗑️ Limpar Log</button>
+            <button class="btn" onclick="testEndpoints()">🔬 Testar Endpoints</button>
+        </div>
+
+        <div id="log" class="log">
+            <div class="info">[SISTEMA] Monitor iniciado. Aguardando testes...</div>
+        </div>
+    </div>
+
+    <script>
+        let requestCount = 0;
+        let isMonitoring = false;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            if (type === 'error' || type === 'success') {
+                requestCount++;
+                document.getElementById('count').textContent = requestCount;
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '<div class="info">[SISTEMA] Log limpo.</div>';
+            requestCount = 0;
+            document.getElementById('count').textContent = '0';
+        }
+
+        function updateTime() {
+            document.getElementById('time').textContent = new Date().toLocaleTimeString();
+        }
+
+        async function testEndpoints() {
+            const endpoints = [
+                { url: 'http://localhost:5173/', name: 'Frontend Root', type: 'GET' },
+                { url: 'http://localhost:5173/vite.svg', name: 'Vite Logo', type: 'GET' },
+                { url: 'http://localhost:5173/src/main.jsx', name: 'Main.jsx (deve dar 404)', type: 'GET' },
+                { url: 'http://localhost:8000/', name: 'Backend Root', type: 'GET' },
+                { url: 'http://localhost:8000/api/', name: 'API Root', type: 'GET' },
+                { url: 'http://localhost:8000/api/salas/', name: 'API Salas', type: 'GET' },
+                { url: 'http://localhost:8000/admin/', name: 'Admin Panel', type: 'GET' },
+            ];
+
+            log('🔬 Iniciando teste de endpoints...', 'info');
+            document.getElementById('status').textContent = 'Testando...';
+
+            for (const endpoint of endpoints) {
+                try {
+                    const startTime = performance.now();
+                    const response = await fetch(endpoint.url);
+                    const endTime = performance.now();
+                    const duration = Math.round(endTime - startTime);
+                    
+                    if (response.ok) {
+                        log(`✅ ${endpoint.name}: ${response.status} ${response.statusText} (${duration}ms)`, 'success');
+                    } else if (response.status === 404) {
+                        log(`⚠️  ${endpoint.name}: ${response.status} ${response.statusText} (${duration}ms)`, 'warning');
+                    } else if (response.status === 401) {
+                        log(`🔒 ${endpoint.name}: ${response.status} ${response.statusText} (${duration}ms) - Auth necessária`, 'warning');
+                    } else {
+                        log(`❌ ${endpoint.name}: ${response.status} ${response.statusText} (${duration}ms)`, 'error');
+                    }
+                    
+                    // Log adicional para headers importantes
+                    const contentType = response.headers.get('content-type');
+                    if (contentType) {
+                        log(`   📄 Content-Type: ${contentType}`, 'info');
+                    }
+                    
+                } catch (error) {
+                    log(`💥 ${endpoint.name}: ERRO DE CONEXÃO - ${error.message}`, 'error');
+                }
+                
+                // Pausa pequena entre requisições
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            log('🏁 Teste de endpoints concluído.', 'info');
+            document.getElementById('status').textContent = 'Concluído';
+        }
+
+        function startMonitoring() {
+            if (isMonitoring) return;
+            
+            isMonitoring = true;
+            document.getElementById('status').textContent = 'Monitorando...';
+            log('👁️  Monitoramento ativo. Abra o console do navegador (F12) para ver detalhes.', 'info');
+            
+            // Override do fetch para capturar requisições
+            const originalFetch = window.fetch;
+            window.fetch = async function(...args) {
+                const url = args[0];
+                const options = args[1] || {};
+                const method = options.method || 'GET';
+                
+                log(`📤 ${method} ${url}`, 'info');
+                
+                try {
+                    const response = await originalFetch(...args);
+                    if (response.ok) {
+                        log(`📥 ${method} ${url} → ${response.status} ${response.statusText}`, 'success');
+                    } else {
+                        log(`📥 ${method} ${url} → ${response.status} ${response.statusText}`, 'error');
+                    }
+                    return response;
+                } catch (error) {
+                    log(`💥 ${method} ${url} → ERRO: ${error.message}`, 'error');
+                    throw error;
+                }
+            };
+            
+            // Testar automaticamente
+            setTimeout(testEndpoints, 1000);
+        }
+
+        // Inicializar
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Auto-start
+        setTimeout(startMonitoring, 500);
+    </script>
+</body>
+</html>

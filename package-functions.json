@@ -1,0 +1,20 @@
+{
+  "name": "netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions para SalaFácil",
+  "type": "module",
+  "scripts": {
+    "build": "netlify build"
+  },
+  "dependencies": {
+    "@netlify/functions": "^2.4.1",
+    "pg": "^8.11.3",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/pg": "^8.10.9",
+    "typescript": "^5.3.3"
+  }
+}

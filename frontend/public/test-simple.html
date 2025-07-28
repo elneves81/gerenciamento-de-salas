@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Simples</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            padding: 20px;
+            text-align: center;
+        }
+        .success {
+            background: #4CAF50;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .test-btn {
+            background: #2196F3;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .result {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste de Conectividade</h1>
+    <div class="success">
+        ✅ Esta página carregou com sucesso!<br>
+        Isso significa que o Vite está funcionando.
+    </div>
+    
+    <h2>Testes de Recursos:</h2>
+    <button class="test-btn" onclick="testResource('/')">Testar Raiz (/)</button>
+    <button class="test-btn" onclick="testResource('/vite.svg')">Testar vite.svg</button>
+    <button class="test-btn" onclick="testResource('/src/main.jsx')">Testar main.jsx (deve dar 404)</button>
+    <button class="test-btn" onclick="testResource('/inexistente.js')">Testar arquivo inexistente</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function testResource(path) {
+            const resultsDiv = document.getElementById('results');
+            const url = `http://localhost:5173${path}`;
+            
+            try {
+                const response = await fetch(url);
+                const status = response.status;
+                const statusText = response.statusText;
+                
+                let statusClass = '';
+                let statusIcon = '';
+                
+                if (status === 200) {
+                    statusClass = 'success';
+                    statusIcon = '✅';
+                } else if (status === 404) {
+                    statusClass = 'warning';
+                    statusIcon = '⚠️';
+                } else {
+                    statusClass = 'error';
+                    statusIcon = '❌';
+                }
+                
+                resultsDiv.innerHTML += `
+                    <div class="result">
+                        ${statusIcon} <strong>${path}</strong>: ${status} ${statusText}
+                        <br><small>URL: ${url}</small>
+                    </div>
+                `;
+                
+                console.log(`${statusIcon} ${path}: ${status} ${statusText}`);
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="result">
+                        💥 <strong>${path}</strong>: ERRO - ${error.message}
+                        <br><small>URL: ${url}</small>
+                    </div>
+                `;
+                console.error(`💥 ${path}: ${error.message}`);
+            }
+        }
+        
+        // Teste automático quando a página carrega
+        window.addEventListener('load', () => {
+            console.log('🧪 Página de teste carregada com sucesso!');
+            console.log('📍 URL atual:', window.location.href);
+            console.log('🌐 User Agent:', navigator.userAgent);
+        });
+    </script>
+</body>
+</html>

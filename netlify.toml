@@ -1,0 +1,56 @@
+# Netlify Configuration - SalaFácil
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Netlify Functions (Backend)
+[functions]
+  directory = "netlify/functions"
+
+# Variáveis de ambiente para desenvolvimento local
+[context.development.environment]
+  DATABASE_URL = "sua-connection-string-neon-aqui"
+  JWT_SECRET = "sua-chave-jwt-super-secreta-aqui"
+
+# Variáveis de ambiente para produção (configurar no Netlify Dashboard)
+[context.production.environment]
+  NODE_ENV = "production"
+
+# Redirects for SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# API redirects
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# CORS for API
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"

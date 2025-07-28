@@ -1,0 +1,31 @@
+{
+  "name": "salafacil-netlify",
+  "version": "1.0.0",
+  "description": "SalaFácil - Sistema de Agendamento com Netlify Functions",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd frontend && npm run build",
+    "dev": "netlify dev",
+    "deploy": "netlify deploy --prod"
+  },
+  "dependencies": {
+    "@netlify/functions": "^2.4.1",
+    "pg": "^8.11.3",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.10.1"
+  },
+  "keywords": [
+    "agenda",
+    "salas",
+    "booking",
+    "netlify",
+    "functions",
+    "neon",
+    "postgresql"
+  ],
+  "author": "SalaFácil Team",
+  "license": "MIT"
+}

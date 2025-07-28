@@ -78,6 +78,7 @@ class UserProfileView(APIView):
 class SalaViewSet(viewsets.ModelViewSet):
     queryset = Sala.objects.filter(ativa=True)
     serializer_class = SalaSerializer
+    permission_classes = [permissions.AllowAny]  # Temporário para debug
     
     @action(detail=True, methods=['get'])
     def agenda(self, request, pk=None):
@@ -130,6 +131,7 @@ class SalaViewSet(viewsets.ModelViewSet):
 
 class ReservaViewSet(viewsets.ModelViewSet):
     serializer_class = ReservaSerializer
+    permission_classes = [permissions.AllowAny]  # Temporário para debug
     
     def get_queryset(self):
         user = self.request.user
