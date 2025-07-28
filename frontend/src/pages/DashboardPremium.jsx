@@ -90,7 +90,13 @@ const DashboardPremium = () => {
   
   // Estados principais
   const [userData, setUserData] = useState(null);
-  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardData, setDashboardData] = useState({
+    total_salas: 0,
+    salas_ocupadas_agora: 0,
+    salas_disponiveis_agora: 0,
+    minhas_reservas_hoje: 0,
+    proximas_reservas: []
+  });
   const [salas, setSalas] = useState([]);
   const [reservas, setReservas] = useState([]);
   const [proximasReservas, setProximasReservas] = useState([]);
@@ -109,6 +115,19 @@ const DashboardPremium = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [allReservas, setAllReservas] = useState([]);
+  
+  // Estados para análises e relatórios
+  const [analytics, setAnalytics] = useState({
+    ocupacao: [],
+    utilizacao: [],
+    tendencias: [],
+    relatorios: []
+  });
+  const [reportData, setReportData] = useState({
+    period: 'week',
+    loading: false,
+    data: []
+  });
   
   // Estados para nova reserva rápida
   const [quickReserva, setQuickReserva] = useState({
@@ -167,38 +186,80 @@ const DashboardPremium = () => {
 
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Carregar dados em paralelo
-      const [userResponse, salasResponse, agendamentosResponse] = await Promise.all([
+      // Carregar dados em paralelo com error handling
+      const [userResponse, salasResponse, agendamentosResponse] = await Promise.allSettled([
         api.get('/auth'),
         api.get('/salas'),
         api.get('/agendamentos')
       ]);
       
-      setUserData(userResponse.data);
-      setSalas(Array.isArray(salasResponse.data) ? salasResponse.data : salasResponse.data.results || []);
+      // Processar resposta do usuário
+      if (userResponse.status === 'fulfilled') {
+        setUserData(userResponse.value.data);
+      }
       
-      const reservasData = Array.isArray(agendamentosResponse.data) ? agendamentosResponse.data : agendamentosResponse.data.results || [];
-      setReservas(reservasData);
-      setAllReservas(reservasData);
+      // Processar resposta das salas
+      let salasData = [];
+      if (salasResponse.status === 'fulfilled') {
+        salasData = Array.isArray(salasResponse.value.data) 
+          ? salasResponse.value.data 
+          : salasResponse.value.data?.results || [];
+        setSalas(salasData);
+      }
+      
+      // Processar resposta dos agendamentos
+      let reservasData = [];
+      if (agendamentosResponse.status === 'fulfilled') {
+        reservasData = Array.isArray(agendamentosResponse.value.data) 
+          ? agendamentosResponse.value.data 
+          : agendamentosResponse.value.data?.results || [];
+        setReservas(reservasData);
+        setAllReservas(reservasData);
+      }
+      
+      // Calcular estatísticas do dashboard
+      const agora = new Date();
+      const hoje = agora.toISOString().split('T')[0];
       
       // Filtrar reservas de hoje
-      const hoje = new Date().toISOString().split('T')[0];
       const reservasHojeFiltered = reservasData.filter(reserva => 
-        reserva.data_inicio.startsWith(hoje)
+        reserva.data_inicio && reserva.data_inicio.startsWith(hoje)
       );
       setReservasHoje(reservasHojeFiltered);
       
-      // Filtrar próximas reservas (próximos 7 dias, excluindo hoje)
-      const agora = new Date();
+      // Filtrar próximas reservas (próximos 7 dias)
       const proximosDias = new Date();
       proximosDias.setDate(agora.getDate() + 7);
       
       const proximasReservasFiltered = reservasData.filter(reserva => {
+        if (!reserva.data_inicio) return false;
         const dataReserva = new Date(reserva.data_inicio);
-        return dataReserva > agora && dataReserva <= proximosDias && reserva.status === 'agendada';
+        return dataReserva > agora && 
+               dataReserva <= proximosDias && 
+               ['agendada', 'em_andamento'].includes(reserva.status);
       }).sort((a, b) => new Date(a.data_inicio) - new Date(b.data_inicio));
       
       setProximasReservas(proximasReservasFiltered);
+      
+      // Calcular salas ocupadas agora
+      const salasOcupadasAgora = reservasData.filter(reserva => {
+        if (!reserva.data_inicio || !reserva.data_fim) return false;
+        const inicio = new Date(reserva.data_inicio);
+        const fim = new Date(reserva.data_fim);
+        return inicio <= agora && fim >= agora && reserva.status === 'em_andamento';
+      }).length;
+      
+      // Atualizar dados do dashboard
+      setDashboardData({
+        total_salas: salasData.length,
+        salas_ocupadas_agora: salasOcupadasAgora,
+        salas_disponiveis_agora: salasData.length - salasOcupadasAgora,
+        minhas_reservas_hoje: reservasHojeFiltered.length,
+        proximas_reservas: proximasReservasFiltered
+      });
+      
+      // Calcular dados de análise
+      generateAnalyticsData(reservasData, salasData);
       
       setError(null);
     } catch (err) {
@@ -210,9 +271,64 @@ const DashboardPremium = () => {
     }
   };
 
+  // Função para gerar dados de análise
+  const generateAnalyticsData = (reservasData, salasData) => {
+    try {
+      const hoje = new Date();
+      const ultimos7Dias = Array.from({length: 7}, (_, i) => {
+        const data = new Date(hoje);
+        data.setDate(hoje.getDate() - i);
+        return data.toISOString().split('T')[0];
+      }).reverse();
+      
+      const ocupacaoPorDia = ultimos7Dias.map(dia => {
+        const reservasDoDia = reservasData.filter(r => 
+          r.data_inicio && r.data_inicio.startsWith(dia)
+        );
+        return {
+          dia: format(new Date(dia), 'dd/MM', { locale: ptBR }),
+          ocupacao: reservasDoDia.length,
+          disponivel: salasData.length - reservasDoDia.length
+        };
+      });
+      
+      const utilizacaoPorSala = salasData.map(sala => {
+        const reservasDaSala = reservasData.filter(r => r.sala_id === sala.id);
+        return {
+          sala: sala.nome,
+          total: reservasDaSala.length,
+          ativas: reservasDaSala.filter(r => r.status === 'agendada').length,
+          utilizacao: Math.round((reservasDaSala.length / (reservasData.length || 1)) * 100)
+        };
+      });
+      
+      setAnalytics({
+        ocupacao: ocupacaoPorDia,
+        utilizacao: utilizacaoPorSala,
+        tendencias: reservasData.slice(-10),
+        relatorios: reservasData
+      });
+    } catch (error) {
+      console.error('Erro ao gerar dados de análise:', error);
+    }
+  };
+
   const handleQuickReserva = async () => {
     try {
-      await api.post('/agendamentos', quickReserva);
+      if (!quickReserva.titulo || !quickReserva.sala || !quickReserva.data_inicio || !quickReserva.data_fim) {
+        showSnackbar('Preencha todos os campos obrigatórios', 'warning');
+        return;
+      }
+
+      const reservaData = {
+        titulo: quickReserva.titulo,
+        sala_id: quickReserva.sala,
+        data_inicio: quickReserva.data_inicio,
+        data_fim: quickReserva.data_fim,
+        participantes: quickReserva.participantes
+      };
+
+      await api.post('/agendamentos', reservaData);
       setQuickActionDialog(false);
       setQuickReserva({
         titulo: '',
@@ -222,21 +338,23 @@ const DashboardPremium = () => {
         participantes: 1
       });
       showSnackbar('Reserva criada com sucesso!', 'success');
-      loadAllData();
+      await loadAllData();
     } catch (error) {
       console.error('Erro ao criar reserva:', error);
-      showSnackbar('Erro ao criar reserva', 'error');
+      const errorMessage = error.response?.data?.error || error.response?.data?.detail || 'Erro ao criar reserva';
+      showSnackbar(errorMessage, 'error');
     }
   };
 
   const cancelarReserva = async (reservaId) => {
     try {
-      await api.delete(`/agendamentos/${reservaId}`);
+      await api.patch(`/agendamentos/${reservaId}/cancelar`);
       showSnackbar('Reserva cancelada com sucesso!', 'success');
-      loadAllData();
+      await loadAllData();
     } catch (error) {
       console.error('Erro ao cancelar reserva:', error);
-      showSnackbar('Erro ao cancelar reserva', 'error');
+      const errorMessage = error.response?.data?.error || error.response?.data?.detail || 'Erro ao cancelar reserva';
+      showSnackbar(errorMessage, 'error');
     }
   };
 
@@ -753,23 +871,287 @@ const DashboardPremium = () => {
 
         {/* Tab de Análises */}
         {activeTab === 1 && (
-          <Box>
-            <Card elevation={3}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Análises e Gráficos
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Gráficos serão implementados em breve...
-                </Typography>
-              </CardContent>
-            </Card>
-          </Box>
+          <Grid container spacing={3}>
+            {/* Gráfico de Ocupação por Dia */}
+            <Grid item xs={12} lg={8}>
+              <Card elevation={3}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    <BarChart sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Ocupação dos Últimos 7 Dias
+                  </Typography>
+                  {analytics.ocupacao?.length > 0 ? (
+                    <Box sx={{ mt: 2 }}>
+                      {analytics.ocupacao.map((item, index) => (
+                        <Box key={index} sx={{ mb: 2 }}>
+                          <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                              {item.dia}
+                            </Typography>
+                            <Typography variant="body2" color="primary" sx={{ fontWeight: 'bold' }}>
+                              {item.ocupacao} reservas
+                            </Typography>
+                          </Box>
+                          <LinearProgress 
+                            variant="determinate" 
+                            value={Math.min((item.ocupacao / (salas.length || 1)) * 100, 100)}
+                            sx={{ 
+                              height: 8, 
+                              borderRadius: 4,
+                              backgroundColor: 'rgba(0,0,0,0.1)',
+                              '& .MuiLinearProgress-bar': {
+                                borderRadius: 4,
+                                background: `linear-gradient(45deg, #667eea 30%, #764ba2 90%)`
+                              }
+                            }}
+                          />
+                        </Box>
+                      ))}
+                    </Box>
+                  ) : (
+                    <Box sx={{ py: 4, textAlign: 'center' }}>
+                      <BarChart sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.3, mb: 2 }} />
+                      <Typography variant="body1" color="text.secondary">
+                        Dados de análise indisponíveis
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Utilização por Sala */}
+            <Grid item xs={12} lg={4}>
+              <Card elevation={3}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    <PieChart sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Utilização por Sala
+                  </Typography>
+                  {analytics.utilizacao?.length > 0 ? (
+                    <List dense>
+                      {analytics.utilizacao.slice(0, 6).map((sala, index) => (
+                        <ListItem key={index} sx={{ px: 0 }}>
+                          <ListItemAvatar>
+                            <Avatar 
+                              sx={{ 
+                                bgcolor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
+                                width: 32,
+                                height: 32
+                              }}
+                            >
+                              <MeetingRoom sx={{ fontSize: 16 }} />
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                {sala.sala}
+                              </Typography>
+                            }
+                            secondary={
+                              <Box>
+                                <Typography variant="caption" color="text.secondary">
+                                  {sala.total} reservas • {sala.ativas} ativas
+                                </Typography>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={sala.utilizacao}
+                                  sx={{ 
+                                    mt: 0.5, 
+                                    height: 4, 
+                                    borderRadius: 2,
+                                    backgroundColor: 'rgba(0,0,0,0.1)',
+                                    '& .MuiLinearProgress-bar': {
+                                      borderRadius: 2,
+                                      backgroundColor: `hsl(${(index * 60) % 360}, 70%, 50%)`
+                                    }
+                                  }}
+                                />
+                              </Box>
+                            }
+                          />
+                          <Typography variant="caption" color="primary" sx={{ fontWeight: 'bold', ml: 1 }}>
+                            {sala.utilizacao}%
+                          </Typography>
+                        </ListItem>
+                      ))}
+                    </List>
+                  ) : (
+                    <Box sx={{ py: 4, textAlign: 'center' }}>
+                      <PieChart sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.3, mb: 2 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        Nenhum dado disponível
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Tendências Recentes */}
+            <Grid item xs={12}>
+              <Card elevation={3}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    <TrendingUp sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Atividade Recente
+                  </Typography>
+                  {analytics.tendencias?.length > 0 ? (
+                    <List>
+                      {analytics.tendencias.slice(0, 5).map((reserva, index) => (
+                        <React.Fragment key={reserva.id}>
+                          <ListItem alignItems="flex-start">
+                            <ListItemAvatar>
+                              <Avatar sx={{ bgcolor: getStatusColor(reserva.status) + '.main' }}>
+                                {getStatusIcon(reserva.status)}
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                                    {reserva.titulo}
+                                  </Typography>
+                                  <Chip 
+                                    label={reserva.status} 
+                                    color={getStatusColor(reserva.status)}
+                                    size="small"
+                                  />
+                                </Box>
+                              }
+                              secondary={
+                                <Box sx={{ mt: 0.5 }}>
+                                  <Typography variant="body2" color="text.secondary">
+                                    📍 {reserva.sala_nome} • ⏰ {formatDateTime(reserva.data_inicio)}
+                                  </Typography>
+                                </Box>
+                              }
+                            />
+                          </ListItem>
+                          {index < analytics.tendencias.length - 1 && <Divider variant="inset" component="li" />}
+                        </React.Fragment>
+                      ))}
+                    </List>
+                  ) : (
+                    <Box sx={{ py: 4, textAlign: 'center' }}>
+                      <Analytics sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.3, mb: 2 }} />
+                      <Typography variant="body1" color="text.secondary">
+                        Nenhuma atividade recente
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
         )}
 
         {/* Tab de Relatórios */}
         {activeTab === 2 && (
           <Grid container spacing={3}>
+            {/* Controles de Filtro */}
+            <Grid item xs={12}>
+              <Card elevation={2} sx={{ mb: 2 }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      <FilterList sx={{ mr: 1, verticalAlign: 'middle' }} />
+                      Filtros de Relatório
+                    </Typography>
+                    <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+                      <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <InputLabel>Período</InputLabel>
+                        <Select
+                          value={reportData.period}
+                          onChange={(e) => setReportData({...reportData, period: e.target.value})}
+                        >
+                          <MenuItem value="week">Esta Semana</MenuItem>
+                          <MenuItem value="month">Este Mês</MenuItem>
+                          <MenuItem value="quarter">Este Trimestre</MenuItem>
+                          <MenuItem value="year">Este Ano</MenuItem>
+                        </Select>
+                      </FormControl>
+                      <Button
+                        variant="contained"
+                        startIcon={<Refresh />}
+                        onClick={loadAllData}
+                        disabled={refreshing}
+                        size="small"
+                      >
+                        Atualizar
+                      </Button>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Métricas Principais */}
+            <Grid item xs={12} sm={6} md={3}>
+              <Card elevation={3} sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48, mx: 'auto', mb: 1 }}>
+                    <Event sx={{ fontSize: 24 }} />
+                  </Avatar>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                    {allReservas.length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    Total de Reservas
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card elevation={3} sx={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48, mx: 'auto', mb: 1 }}>
+                    <CheckCircle sx={{ fontSize: 24 }} />
+                  </Avatar>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                    {allReservas.filter(r => r.status === 'agendada').length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    Reservas Ativas
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card elevation={3} sx={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: 'white' }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48, mx: 'auto', mb: 1 }}>
+                    <Schedule sx={{ fontSize: 24 }} />
+                  </Avatar>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                    {allReservas.filter(r => r.status === 'em_andamento').length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    Em Andamento
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card elevation={3} sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48, mx: 'auto', mb: 1 }}>
+                    <Cancel sx={{ fontSize: 24 }} />
+                  </Avatar>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                    {allReservas.filter(r => r.status === 'cancelada').length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    Canceladas
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
             {/* Relatório de Ocupação */}
             <Grid item xs={12} md={6}>
               <Card elevation={3}>
@@ -785,7 +1167,16 @@ const DashboardPremium = () => {
                     <LinearProgress 
                       variant="determinate" 
                       value={((dashboardData?.salas_ocupadas_agora || 0) / (dashboardData?.total_salas || 1)) * 100}
-                      sx={{ height: 10, borderRadius: 5, mb: 1 }}
+                      sx={{ 
+                        height: 12, 
+                        borderRadius: 6, 
+                        mb: 1,
+                        backgroundColor: 'rgba(0,0,0,0.1)',
+                        '& .MuiLinearProgress-bar': {
+                          borderRadius: 6,
+                          background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)'
+                        }
+                      }}
                     />
                     <Typography variant="caption" color="text.secondary">
                       {Math.round(((dashboardData?.salas_ocupadas_agora || 0) / (dashboardData?.total_salas || 1)) * 100)}% das salas estão ocupadas
@@ -796,21 +1187,21 @@ const DashboardPremium = () => {
                   
                   <Grid container spacing={2}>
                     <Grid item xs={6}>
-                      <Box textAlign="center">
-                        <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold' }}>
+                      <Box textAlign="center" sx={{ p: 1, borderRadius: 2, bgcolor: 'success.light', color: 'success.contrastText' }}>
+                        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                           {dashboardData?.salas_disponiveis_agora || 0}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2">
                           Disponíveis
                         </Typography>
                       </Box>
                     </Grid>
                     <Grid item xs={6}>
-                      <Box textAlign="center">
-                        <Typography variant="h4" color="error.main" sx={{ fontWeight: 'bold' }}>
+                      <Box textAlign="center" sx={{ p: 1, borderRadius: 2, bgcolor: 'error.light', color: 'error.contrastText' }}>
+                        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                           {dashboardData?.salas_ocupadas_agora || 0}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2">
                           Ocupadas
                         </Typography>
                       </Box>
@@ -820,7 +1211,7 @@ const DashboardPremium = () => {
               </Card>
             </Grid>
 
-            {/* Relatório de Atividade */}
+            {/* Atividade do Sistema */}
             <Grid item xs={12} md={6}>
               <Card elevation={3}>
                 <CardContent>
@@ -830,52 +1221,65 @@ const DashboardPremium = () => {
                   </Typography>
                   
                   <List dense>
-                    <ListItem>
+                    <ListItem sx={{ px: 0 }}>
                       <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                          <Event sx={{ fontSize: 18 }} />
+                        <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
+                          <Event sx={{ fontSize: 20 }} />
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText
-                        primary="Total de Reservas"
-                        secondary={`${allReservas.length} reservas registradas`}
+                        primary={
+                          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                            Total de Reservas
+                          </Typography>
+                        }
+                        secondary={`${allReservas.length} reservas registradas no sistema`}
                       />
+                      <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
+                        {allReservas.length}
+                      </Typography>
                     </ListItem>
                     
-                    <ListItem>
+                    <Divider variant="inset" component="li" />
+                    
+                    <ListItem sx={{ px: 0 }}>
                       <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'success.main', width: 32, height: 32 }}>
-                          <CheckCircle sx={{ fontSize: 18 }} />
+                        <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>
+                          <CheckCircle sx={{ fontSize: 20 }} />
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText
-                        primary="Reservas Ativas"
-                        secondary={`${allReservas.filter(r => r.status === 'agendada').length} reservas agendadas`}
+                        primary={
+                          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                            Taxa de Sucesso
+                          </Typography>
+                        }
+                        secondary={`${Math.round((allReservas.filter(r => r.status !== 'cancelada').length / (allReservas.length || 1)) * 100)}% das reservas não foram canceladas`}
                       />
+                      <Typography variant="h6" color="success.main" sx={{ fontWeight: 'bold' }}>
+                        {Math.round((allReservas.filter(r => r.status !== 'cancelada').length / (allReservas.length || 1)) * 100)}%
+                      </Typography>
                     </ListItem>
                     
-                    <ListItem>
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'warning.main', width: 32, height: 32 }}>
-                          <Schedule sx={{ fontSize: 18 }} />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary="Em Andamento"
-                        secondary={`${allReservas.filter(r => r.status === 'em_andamento').length} reservas ativas`}
-                      />
-                    </ListItem>
+                    <Divider variant="inset" component="li" />
                     
-                    <ListItem>
+                    <ListItem sx={{ px: 0 }}>
                       <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'error.main', width: 32, height: 32 }}>
-                          <Cancel sx={{ fontSize: 18 }} />
+                        <Avatar sx={{ bgcolor: 'info.main', width: 40, height: 40 }}>
+                          <Today sx={{ fontSize: 20 }} />
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText
-                        primary="Canceladas"
-                        secondary={`${allReservas.filter(r => r.status === 'cancelada').length} reservas canceladas`}
+                        primary={
+                          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                            Reservas Hoje
+                          </Typography>
+                        }
+                        secondary={`${reservasHoje.length} reservas agendadas para hoje`}
                       />
+                      <Typography variant="h6" color="info.main" sx={{ fontWeight: 'bold' }}>
+                        {reservasHoje.length}
+                      </Typography>
                     </ListItem>
                   </List>
                 </CardContent>
@@ -886,25 +1290,44 @@ const DashboardPremium = () => {
             <Grid item xs={12}>
               <Card elevation={3}>
                 <CardContent>
-                  <Box display="flex" alignItems="center" justifyContent="between" sx={{ mb: 2 }}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                       <Assessment sx={{ mr: 1, verticalAlign: 'middle' }} />
                       Relatório Detalhado
                     </Typography>
-                    <Button
-                      variant="outlined"
-                      onClick={() => setShowAnalytics(!showAnalytics)}
-                      endIcon={showAnalytics ? <ExpandLess /> : <ExpandMore />}
-                    >
-                      {showAnalytics ? 'Ocultar' : 'Mostrar'} Detalhes
-                    </Button>
+                    <Box display="flex" gap={1}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => setShowAnalytics(!showAnalytics)}
+                        endIcon={showAnalytics ? <ExpandLess /> : <ExpandMore />}
+                      >
+                        {showAnalytics ? 'Ocultar' : 'Mostrar'} Detalhes
+                      </Button>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<Analytics />}
+                        onClick={() => navigate('/relatorios')}
+                      >
+                        Ver Relatório Completo
+                      </Button>
+                    </Box>
                   </Box>
                   
                   <Collapse in={showAnalytics}>
                     <Grid container spacing={2}>
                       <Grid item xs={12} sm={6} md={3}>
-                        <Paper elevation={1} sx={{ p: 2, textAlign: 'center' }}>
-                          <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold' }}>
+                        <Paper 
+                          elevation={2} 
+                          sx={{ 
+                            p: 2, 
+                            textAlign: 'center', 
+                            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+                            border: '1px solid rgba(102, 126, 234, 0.2)'
+                          }}
+                        >
+                          <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                             {Math.round(allReservas.length / (salas.length || 1))}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
@@ -914,9 +1337,17 @@ const DashboardPremium = () => {
                       </Grid>
                       
                       <Grid item xs={12} sm={6} md={3}>
-                        <Paper elevation={1} sx={{ p: 2, textAlign: 'center' }}>
-                          <Typography variant="h5" color="success.main" sx={{ fontWeight: 'bold' }}>
-                            {Math.round((allReservas.filter(r => r.status !== 'cancelada').length / allReservas.length) * 100) || 0}%
+                        <Paper 
+                          elevation={2} 
+                          sx={{ 
+                            p: 2, 
+                            textAlign: 'center',
+                            background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(56, 142, 60, 0.1) 100%)',
+                            border: '1px solid rgba(76, 175, 80, 0.2)'
+                          }}
+                        >
+                          <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                            {Math.round((allReservas.filter(r => r.status !== 'cancelada').length / (allReservas.length || 1)) * 100)}%
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
                             Taxa de sucesso
@@ -925,8 +1356,16 @@ const DashboardPremium = () => {
                       </Grid>
                       
                       <Grid item xs={12} sm={6} md={3}>
-                        <Paper elevation={1} sx={{ p: 2, textAlign: 'center' }}>
-                          <Typography variant="h5" color="info.main" sx={{ fontWeight: 'bold' }}>
+                        <Paper 
+                          elevation={2} 
+                          sx={{ 
+                            p: 2, 
+                            textAlign: 'center',
+                            background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(21, 101, 192, 0.1) 100%)',
+                            border: '1px solid rgba(33, 150, 243, 0.2)'
+                          }}
+                        >
+                          <Typography variant="h4" color="info.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                             {reservasHoje.length}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
@@ -936,8 +1375,16 @@ const DashboardPremium = () => {
                       </Grid>
                       
                       <Grid item xs={12} sm={6} md={3}>
-                        <Paper elevation={1} sx={{ p: 2, textAlign: 'center' }}>
-                          <Typography variant="h5" color="warning.main" sx={{ fontWeight: 'bold' }}>
+                        <Paper 
+                          elevation={2} 
+                          sx={{ 
+                            p: 2, 
+                            textAlign: 'center',
+                            background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(245, 124, 0, 0.1) 100%)',
+                            border: '1px solid rgba(255, 152, 0, 0.2)'
+                          }}
+                        >
+                          <Typography variant="h4" color="warning.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                             {proximasReservas.length}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
