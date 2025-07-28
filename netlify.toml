@@ -17,8 +17,8 @@
   JWT_SECRET = "sua-chave-jwt-super-secreta-aqui"
 
 # Variáveis de ambiente para produção (configurar no Netlify Dashboard)
-[context.production.environment]
-  NODE_ENV = "production"
+# [context.production.environment]
+  # NODE_ENV removido para permitir devDependencies no build
 
 # Redirects for SPA
 [[redirects]]
