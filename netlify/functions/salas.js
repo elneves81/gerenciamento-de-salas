@@ -1,11 +1,14 @@
 const { Client } = require('pg');
 
-const client = new Client({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+// Função para criar nova conexão
+const createClient = () => {
+  return new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  });
+};
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -23,18 +26,20 @@ exports.handler = async (event, context) => {
     };
   }
 
+  const client = createClient();
+
   try {
     await client.connect();
 
     switch (event.httpMethod) {
       case 'GET':
-        return await handleGet(headers);
+        return await handleGet(client, headers);
       case 'POST':
-        return await handlePost(event, headers);
+        return await handlePost(event, client, headers);
       case 'PUT':
-        return await handlePut(event, headers);
+        return await handlePut(event, client, headers);
       case 'DELETE':
-        return await handleDelete(event, headers);
+        return await handleDelete(event, client, headers);
       default:
         return {
           statusCode: 405,
@@ -54,7 +59,7 @@ exports.handler = async (event, context) => {
   }
 };
 
-async function handleGet(headers) {
+async function handleGet(client, headers) {
   try {
     const result = await client.query('SELECT * FROM agendamento_sala ORDER BY id');
     return {
@@ -72,7 +77,7 @@ async function handleGet(headers) {
   }
 }
 
-async function handlePost(event, headers) {
+async function handlePost(event, client, headers) {
   try {
     const { nome, capacidade, equipamentos, descricao } = JSON.parse(event.body);
     
@@ -104,7 +109,7 @@ async function handlePost(event, headers) {
   }
 }
 
-async function handlePut(event, headers) {
+async function handlePut(event, client, headers) {
   try {
     const { id, nome, capacidade, equipamentos, descricao, disponivel } = JSON.parse(event.body);
     
@@ -144,7 +149,7 @@ async function handlePut(event, headers) {
   }
 }
 
-async function handleDelete(event, headers) {
+async function handleDelete(event, client, headers) {
   try {
     const { id } = JSON.parse(event.body);
     
