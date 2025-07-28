@@ -9,7 +9,7 @@
 
 # Netlify Functions (Backend)
 [functions]
-  directory = "netlify/functions"
+  directory = "../netlify/functions"
 
 # Variáveis de ambiente para desenvolvimento local
 [context.development.environment]
