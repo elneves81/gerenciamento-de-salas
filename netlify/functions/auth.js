@@ -91,27 +91,40 @@ exports.handler = async (event, context) => {
 
     if (action === 'login') {
       // Login
+      console.log('Login attempt for username:', username);
+      
       const user = await client.query(
         'SELECT * FROM auth_user WHERE username = $1',
         [username]
       );
 
+      console.log('User found:', user.rows.length > 0);
+
       if (user.rows.length === 0) {
         return {
           statusCode: 401,
           headers,
-          body: JSON.stringify({ error: 'Usuário ou senha inválidos' })
+          body: JSON.stringify({ 
+            error: 'Usuário ou senha inválidos',
+            debug: 'User not found'
+          })
         };
       }
 
       const userData = user.rows[0];
+      console.log('Password check for user:', userData.username);
+      
       const passwordMatch = await bcrypt.compare(password, userData.password);
+      console.log('Password match:', passwordMatch);
 
       if (!passwordMatch) {
         return {
           statusCode: 401,
           headers,
-          body: JSON.stringify({ error: 'Usuário ou senha inválidos' })
+          body: JSON.stringify({ 
+            error: 'Usuário ou senha inválidos',
+            debug: 'Password mismatch'
+          })
         };
       }
 
