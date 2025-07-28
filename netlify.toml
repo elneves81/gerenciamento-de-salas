@@ -1,7 +1,7 @@
 # Netlify Configuration - SalaFácil
 [build]
   base = "frontend"
-  command = "npm ci && npx vite build"
+  command = "rm -f package-lock.json && npm install && npm run build"
   publish = "dist"
 
 [build.environment]
