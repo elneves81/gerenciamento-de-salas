@@ -5,7 +5,7 @@ import HeaderPremium from './components/HeaderPremium';
 import Dashboard from './pages/DashboardPremium';
 import Salas from './pages/Salas';
 import Reservas from './pages/Reservas';
-import Login from './pages/LoginNovo';
+import AuthPage from './pages/AuthPage';
 import NovaReserva from './pages/NovaReserva';
 import GerenciarSalas from './pages/GerenciarSalas';
 
@@ -33,7 +33,7 @@ function AppContent() {
   }
 
   if (!user) {
-    return <Login />;
+    return <AuthPage />;
   }
 
   return (

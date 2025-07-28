@@ -144,6 +144,60 @@ export const AuthProvider = ({ children }) => {
     }
   }, [setToken, setRefreshToken, setAuthHeader]);
 
+  // Registrar novo usuário
+  const register = useCallback(async (userData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await api.post('/register', userData);
+      
+      if (response.data.token) {
+        setToken(response.data.token);
+        if (response.data.refreshToken) {
+          setRefreshToken(response.data.refreshToken);
+        }
+        setAuthHeader(response.data.token);
+        setUser(response.data.user);
+      }
+      
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Erro ao registrar usuário';
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [setToken, setRefreshToken, setAuthHeader]);
+
+  // Login com Google
+  const loginWithGoogle = useCallback(async (credential) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await api.post('/google-auth', { credential });
+      
+      if (response.data.token) {
+        setToken(response.data.token);
+        if (response.data.refreshToken) {
+          setRefreshToken(response.data.refreshToken);
+        }
+        setAuthHeader(response.data.token);
+        setUser(response.data.user);
+      }
+      
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Erro ao fazer login com Google';
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [setToken, setRefreshToken, setAuthHeader]);
+
   // Logout otimizado
   const logout = useCallback(() => {
     // Cancelar requisições em andamento
@@ -181,12 +235,14 @@ export const AuthProvider = ({ children }) => {
   const contextValue = useMemo(() => ({
     user,
     login,
+    register,
+    loginWithGoogle,
     logout,
     loading,
     error,
     isAuthenticated: !!user && !!token,
     refreshUser: loadUser
-  }), [user, login, logout, loading, error, token, loadUser]);
+  }), [user, login, register, loginWithGoogle, logout, loading, error, token, loadUser]);
 
   return (
     <AuthContext.Provider value={contextValue}>
