@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json'
   };
@@ -28,13 +28,25 @@ exports.handler = async (event, context) => {
     );
 
     if (existingUser.rows.length > 0) {
+      // Se já existe, vamos resetar a senha
+      const hashedPassword = await bcrypt.hash('admin123', 12);
+      
+      await client.query(
+        'UPDATE auth_user SET password = $1 WHERE username = $2',
+        [hashedPassword, 'admin']
+      );
+
       await client.end();
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          success: false,
-          message: 'Usuário admin já existe'
+          success: true,
+          message: 'Senha do usuário admin resetada com sucesso!',
+          credentials: {
+            username: 'admin',
+            password: 'admin123'
+          }
         })
       };
     }
@@ -85,7 +97,7 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: false,
         error: error.message,
-        message: 'Erro ao criar usuário admin'
+        message: 'Erro ao criar/resetar usuário admin'
       })
     };
   }
