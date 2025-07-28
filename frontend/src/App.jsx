@@ -7,6 +7,7 @@ import Salas from './pages/Salas';
 import Reservas from './pages/Reservas';
 import Login from './pages/LoginNovo';
 import NovaReserva from './pages/NovaReserva';
+import GerenciarSalas from './pages/GerenciarSalas';
 
 function App() {
   return (
@@ -48,6 +49,8 @@ function AppContent() {
             </main>
           </>
         } />
+        <Route path="/gerenciar-salas" element={<GerenciarSalas />} />
+        <Route path="/admin/salas" element={<GerenciarSalas />} />
         <Route path="/reservas" element={
           <>
             <HeaderPremium currentPage="reservas" />

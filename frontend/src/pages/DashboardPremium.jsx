@@ -787,6 +787,16 @@ const DashboardPremium = () => {
                           <Button
                             fullWidth
                             variant="outlined"
+                            startIcon={<Settings />}
+                            onClick={() => navigate('/gerenciar-salas')}
+                          >
+                            Gerenciar Salas
+                          </Button>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Button
+                            fullWidth
+                            variant="outlined"
                             startIcon={<Analytics />}
                             onClick={() => navigate('/relatorios')}
                           >
