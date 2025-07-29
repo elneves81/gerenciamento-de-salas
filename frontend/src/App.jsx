@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import StorageInitializer from './components/StorageInitializer';
 import HeaderPremium from './components/HeaderPremium';
 import Dashboard from './pages/DashboardPremium';
 import Salas from './pages/Salas';
@@ -11,13 +12,15 @@ import GerenciarSalas from './pages/GerenciarSalas';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <div className="min-h-screen bg-gray-50">
-          <AppContent />
-        </div>
-      </Router>
-    </AuthProvider>
+    <StorageInitializer>
+      <AuthProvider>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <div className="min-h-screen bg-gray-50">
+            <AppContent />
+          </div>
+        </Router>
+      </AuthProvider>
+    </StorageInitializer>
   );
 }
 

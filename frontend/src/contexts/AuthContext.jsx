@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '../services/api';
+import { useSafeLocalStorage, clearCorruptedStorage } from '../hooks/useSafeLocalStorage';
 
 const AuthContext = createContext();
 
@@ -12,41 +13,21 @@ export const useAuth = () => {
   return context;
 };
 
-// Hook para localStorage com error handling
-const useLocalStorage = (key, initialValue) => {
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(`Erro ao ler localStorage key "${key}":`, error);
-      return initialValue;
-    }
-  });
-
-  const setValue = useCallback((value) => {
-    try {
-      setStoredValue(value);
-      if (value === null) {
-        window.localStorage.removeItem(key);
-      } else {
-        window.localStorage.setItem(key, JSON.stringify(value));
-      }
-    } catch (error) {
-      console.error(`Erro ao salvar localStorage key "${key}":`, error);
-    }
-  }, [key]);
-
-  return [storedValue, setValue];
-};
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [token, setToken] = useLocalStorage('token', null);
-  const [refreshToken, setRefreshToken] = useLocalStorage('refreshToken', null);
+  const [token, setToken] = useSafeLocalStorage('token', null);
+  const [refreshToken, setRefreshToken] = useSafeLocalStorage('refreshToken', null);
   const abortControllerRef = useRef(null);
+
+  // Limpar dados corrompidos na inicialização
+  useEffect(() => {
+    const clearedKeys = clearCorruptedStorage();
+    if (clearedKeys.length > 0) {
+      console.log('localStorage corrompido foi limpo na inicialização');
+    }
+  }, []);
 
   // Configurar header de autorização
   const setAuthHeader = useCallback((authToken) => {
