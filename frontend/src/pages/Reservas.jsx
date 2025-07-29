@@ -14,18 +14,28 @@ const Reservas = () => {
   const [ordenacao, setOrdenacao] = useState('data_inicio');
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [reservasPorPagina] = useState(10);
+  const [lastLoad, setLastLoad] = useState(0);
 
   useEffect(() => {
     loadReservas();
   }, []);
 
   const loadReservas = async () => {
+    // Throttling - só carregar se passou mais de 5 segundos
+    const now = Date.now();
+    if (now - lastLoad < 5000) {
+      console.log('Requisição throttled - aguarde...');
+      return;
+    }
+    
     setLoading(true);
+    setLastLoad(now);
+    
     try {
       const response = await api.get('/agendamentos', {
         headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'Cache-Control': 'max-age=30', // Cache por 30 segundos
+          'Pragma': 'cache'
         }
       });
       

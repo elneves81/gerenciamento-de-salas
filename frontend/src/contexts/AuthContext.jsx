@@ -80,16 +80,17 @@ export const AuthProvider = ({ children }) => {
 
       console.error('Erro ao carregar usuário:', error);
       
-      // Retry logic melhorado
-      if (retryCount < 2 && error.response?.status !== 401) {
+      // Retry logic controlado - apenas 1 retry e só em casos específicos
+      if (retryCount < 1 && error.response?.status !== 401 && error.response?.status !== 403) {
         console.log(`Tentativa ${retryCount + 1} de recarregar usuário...`);
-        setTimeout(() => loadUser(retryCount + 1), 1000 * (retryCount + 1));
+        // Usar timeout mais longo para evitar spam
+        setTimeout(() => loadUser(retryCount + 1), 5000);
         return;
       }
 
-      // Se erro 401 ou muitas tentativas, limpar auth
-      if (error.response?.status === 401 || retryCount >= 2) {
-        console.log('Token inválido ou muitas tentativas, fazendo logout...');
+      // Se erro 401/403 ou retry falhou, limpar auth
+      if (error.response?.status === 401 || error.response?.status === 403 || retryCount >= 1) {
+        console.log('Token inválido ou retry falhou, fazendo logout...');
         logout();
         return;
       }
@@ -201,15 +202,15 @@ export const AuthProvider = ({ children }) => {
     setError(null);
   }, [setToken, setRefreshToken, setAuthHeader]);
 
-  // Inicializar quando o token muda
+  // Inicializar quando o token muda - APENAS UMA VEZ
   useEffect(() => {
-    if (token) {
+    if (token && !user) { // Só carregar se não tiver usuário
       setAuthHeader(token);
-      loadUser();
-    } else {
+      loadUser(0); // Reset retry count
+    } else if (!token) {
       setLoading(false);
     }
-  }, [token, setAuthHeader, loadUser]);
+  }, [token, setAuthHeader]); // Remover loadUser das dependências
 
   // Cleanup ao desmontar
   useEffect(() => {
