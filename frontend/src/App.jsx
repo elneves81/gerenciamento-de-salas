@@ -5,6 +5,7 @@ import { NotificationProvider } from './components/NotificationSystem';
 import StorageInitializer from './components/StorageInitializer';
 import HeaderModernoLimpo from './components/HeaderModernoLimpo';
 import HeaderSimples from './components/HeaderSimples';
+import HeaderSimplesLimpo from './components/HeaderSimplesLimpo';
 import Dashboard from './pages/DashboardPremium';
 import ReservasModerno from './pages/ReservasModerno';
 import AuthPage from './pages/AuthPage';
@@ -64,7 +65,7 @@ function AppContent() {
           path="/nova-reserva" 
           element={
             <div key="nova-reserva-page">
-              <HeaderModernoLimpo currentPage="nova-reserva" />
+              <HeaderSimplesLimpo currentPage="nova-reserva" />
               <main className="min-h-screen pt-4">
                 <NovaReserva />
               </main>
