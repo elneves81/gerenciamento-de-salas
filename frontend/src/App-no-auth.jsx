@@ -14,6 +14,7 @@ const PageLayout = React.memo(({ children, currentPage = null }) => (
   <>
     {currentPage && <HeaderPremium currentPage={currentPage} />}
     <main className="min-h-screen pt-4">
+        
       <ErrorBoundary>
         {children}
       </ErrorBoundary>
