@@ -1,25 +1,107 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Reset Sistema</title>
+    <title>Reset LocalStorage - SalaFácil</title>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 600px; 
+            margin: 50px auto; 
+            padding: 20px; 
+            text-align: center;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .success { color: #27ae60; }
+        .error { color: #e74c3c; }
+        .warning { color: #f39c12; }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button:hover { background: #2980b9; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        pre { text-align: left; background: #f8f9fa; padding: 10px; border-radius: 5px; }
+    </style>
 </head>
 <body>
-    <h1>Limpando dados do sistema...</h1>
+    <div class="container">
+        <h1>🔧 Reset do Sistema - SalaFácil</h1>
+        <p>Esta página diagnostica e corrige problemas de localStorage.</p>
+        
+        <div id="status"></div>
+        
+        <button onclick="diagnose()">Diagnosticar Problemas</button>
+        <button onclick="resetAll()" class="btn-danger">Limpar Tudo</button>
+        <button onclick="goHome()">Ir para o Sistema</button>
+    </div>
+
     <script>
-        // Limpar todo o localStorage
-        localStorage.clear();
-        sessionStorage.clear();
-        
-        // Remover cookies
-        document.cookie.split(";").forEach(function(c) { 
-            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-        });
-        
-        alert('Dados limpos! Redirecionando...');
-        setTimeout(() => {
+        function diagnose() {
+            const status = document.getElementById('status');
+            let html = '<h3>🔍 Diagnóstico:</h3>';
+            let problems = 0;
+            
+            // Verificar localStorage
+            const keys = ['accessToken', 'refreshToken', 'user'];
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value === null) {
+                    html += `<div class="warning">⚠️ ${key}: não existe</div>`;
+                } else if (value === 'undefined' || value === 'null') {
+                    html += `<div class="error">❌ ${key}: valor problemático "${value}"</div>`;
+                    problems++;
+                } else {
+                    try {
+                        JSON.parse(value);
+                        html += `<div class="success">✅ ${key}: OK</div>`;
+                    } catch (e) {
+                        html += `<div class="error">❌ ${key}: JSON inválido</div>`;
+                        problems++;
+                    }
+                }
+            });
+            
+            html += `<hr><strong>${problems > 0 ? '⚠️ ' + problems + ' problemas encontrados!' : '✅ Nenhum problema encontrado!'}</strong>`;
+            status.innerHTML = html;
+        }
+
+        function resetAll() {
+            const status = document.getElementById('status');
+            
+            // Limpar localStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Limpar cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            status.innerHTML = '<div class="success"><h3>✅ Dados limpos com sucesso!</h3><p>Você pode agora acessar o sistema normalmente.</p></div>';
+        }
+
+        function goHome() {
             window.location.href = '/';
-        }, 2000);
+        }
+
+        // Auto-diagnóstico ao carregar
+        window.onload = function() {
+            diagnose();
+        };
     </script>
-    <p>Se não redirecionar automaticamente, <a href="/">clique aqui</a></p>
 </body>
 </html>
