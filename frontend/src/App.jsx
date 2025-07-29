@@ -4,7 +4,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import StorageInitializer from './components/StorageInitializer';
 import HeaderModernoLimpo from './components/HeaderModernoLimpo';
 import Dashboard from './pages/DashboardPremium';
-import Salas from './pages/Salas';
 import ReservasModerno from './pages/ReservasModerno';
 import AuthPage from './pages/AuthPage';
 import NovaReserva from './pages/NovaReserva';
@@ -44,17 +43,6 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route 
-          path="/salas" 
-          element={
-            <div key="salas-page">
-              <HeaderModernoLimpo currentPage="salas" />
-              <main className="min-h-screen pt-4">
-                <Salas />
-              </main>
-            </div>
-          } 
-        />
         <Route path="/gerenciar-salas" element={<GerenciarSalas />} />
         <Route path="/admin/salas" element={<GerenciarSalas />} />
         <Route 
@@ -79,6 +67,8 @@ function AppContent() {
             </div>
           } 
         />
+        {/* Redirect /salas to /reservas */}
+        <Route path="/salas" element={<Navigate to="/reservas" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </>

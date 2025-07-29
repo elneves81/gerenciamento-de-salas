@@ -75,12 +75,6 @@ const HeaderModerno = ({ title = "Sistema de Agendamento", currentPage = "dashbo
               path="/nova-reserva"
               active={currentPage === 'nova-reserva'}
             />
-            <NavigationItem
-              icon={Users}
-              label="Salas"
-              path="/salas"
-              active={currentPage === 'salas'}
-            />
           </nav>
 
           {/* Barra de Pesquisa */}
@@ -89,7 +83,7 @@ const HeaderModerno = ({ title = "Sistema de Agendamento", currentPage = "dashbo
             <input
               type="text"
               className="search-input"
-              placeholder="Pesquisar reservas, salas..."
+              placeholder="Pesquisar reservas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -183,12 +177,6 @@ const HeaderModerno = ({ title = "Sistema de Agendamento", currentPage = "dashbo
             label="Nova Reserva"
             path="/nova-reserva"
             active={currentPage === 'nova-reserva'}
-          />
-          <NavigationItem
-            icon={Users}
-            label="Salas"
-            path="/salas"
-            active={currentPage === 'salas'}
           />
         </nav>
       </div>
