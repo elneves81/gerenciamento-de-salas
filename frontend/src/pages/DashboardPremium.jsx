@@ -85,9 +85,9 @@ import {
 import { format, isToday, isTomorrow, parseISO, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import api from '../services/api';
-import GraficosInterativos from '../components/GraficosInterativos';
+import GraficosInterativosSimples from '../components/GraficosInterativosSimples';
 import RelatoriosAvancados from '../components/RelatoriosAvancados';
-import IntegracaoCalendario from '../components/IntegracaoCalendario';
+import IntegracaoCalendarioSimples from '../components/IntegracaoCalendarioSimples';
 import { useNotifications, useAutoNotifications } from '../components/NotificationSystem';
 
 const DashboardPremium = () => {
@@ -1626,14 +1626,14 @@ const DashboardPremium = () => {
         {/* Tab de Calendário */}
         {activeTab === 3 && (
           <Box sx={{ mt: 2 }}>
-            <IntegracaoCalendario reservas={allReservas} salas={allSalas} />
+            <IntegracaoCalendarioSimples reservas={allReservas} salas={salas} />
           </Box>
         )}
 
         {/* Tab de Gráficos */}
         {activeTab === 4 && (
           <Box sx={{ mt: 2 }}>
-            <GraficosInterativos reservas={allReservas} salas={allSalas} />
+            <GraficosInterativosSimples reservas={allReservas} salas={salas} />
           </Box>
         )}
 
