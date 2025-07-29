@@ -78,7 +78,9 @@ import {
   ExpandMore,
   ExpandLess,
   Assessment,
-  Logout
+  Logout,
+  History,
+  Lightbulb
 } from '@mui/icons-material';
 import { format, isToday, isTomorrow, parseISO, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -111,6 +113,7 @@ const DashboardPremium = () => {
   const [quickActionDialog, setQuickActionDialog] = useState(false);
   const [notificationDialog, setNotificationDialog] = useState(false);
   const [settingsDialog, setSettingsDialog] = useState(false);
+  const [showTips, setShowTips] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [activeTab, setActiveTab] = useState(0);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -448,6 +451,19 @@ const DashboardPremium = () => {
     );
   }
 
+  // Calcular estatísticas para o dashboard interativo
+  const salasStats = {
+    total: dashboardData.total_salas,
+    ocupadas: dashboardData.salas_ocupadas_agora,
+    disponiveis: dashboardData.salas_disponiveis_agora
+  };
+
+  const reservasStats = {
+    hoje: dashboardData.minhas_reservas_hoje,
+    concluidas: reservas.filter(r => r.status === 'concluida').length,
+    agendadas: reservas.filter(r => r.status === 'agendada').length
+  };
+
   return (
     <Container maxWidth="xl">
       <Box sx={{ mt: 4, mb: 4 }}>
@@ -743,19 +759,175 @@ const DashboardPremium = () => {
                       ))}
                     </List>
                   ) : (
-                    <Box textAlign="center" py={4}>
-                      <EventBusy sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                      <Typography variant="body1" color="text.secondary">
-                        Nenhuma reserva próxima encontrada
-                      </Typography>
-                      <Button 
-                        variant="contained" 
-                        sx={{ mt: 2 }}
-                        onClick={() => setQuickActionDialog(true)}
-                        startIcon={<Add />}
-                      >
-                        Criar Nova Reserva
-                      </Button>
+                    <Box>
+                      {/* Dashboard Interativo quando não há reservas */}
+                      <Grid container spacing={3}>
+                        {/* Ações Rápidas */}
+                        <Grid item xs={12} md={6}>
+                          <Box textAlign="center" p={3} sx={{ 
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            borderRadius: 3,
+                            color: 'white'
+                          }}>
+                            <Add sx={{ fontSize: 40, mb: 1 }} />
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                              Nova Reserva
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
+                              Agende uma sala rapidamente
+                            </Typography>
+                            <Button 
+                              variant="contained" 
+                              sx={{ 
+                                bgcolor: 'rgba(255,255,255,0.2)',
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+                              }}
+                              onClick={() => setQuickActionDialog(true)}
+                              startIcon={<Add />}
+                            >
+                              Criar Agora
+                            </Button>
+                          </Box>
+                        </Grid>
+
+                        {/* Salas Disponíveis Agora */}
+                        <Grid item xs={12} md={6}>
+                          <Box textAlign="center" p={3} sx={{ 
+                            background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
+                            borderRadius: 3,
+                            color: 'white'
+                          }}>
+                            <MeetingRoom sx={{ fontSize: 40, mb: 1 }} />
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                              Salas Livres
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
+                              {salasStats.disponiveis} salas disponíveis agora
+                            </Typography>
+                            <Button 
+                              variant="contained"
+                              sx={{ 
+                                bgcolor: 'rgba(255,255,255,0.2)',
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+                              }}
+                              onClick={() => navigate('/reservas')}
+                              startIcon={<Visibility />}
+                            >
+                              Ver Salas
+                            </Button>
+                          </Box>
+                        </Grid>
+
+                        {/* Histórico Recente */}
+                        <Grid item xs={12} md={6}>
+                          <Box textAlign="center" p={3} sx={{ 
+                            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                            borderRadius: 3,
+                            color: 'white'
+                          }}>
+                            <History sx={{ fontSize: 40, mb: 1 }} />
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                              Histórico
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
+                              {reservasStats.concluidas} reservas concluídas
+                            </Typography>
+                            <Button 
+                              variant="contained"
+                              sx={{ 
+                                bgcolor: 'rgba(255,255,255,0.2)',
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+                              }}
+                              onClick={() => navigate('/reservas?status=concluida')}
+                              startIcon={<BarChart />}
+                            >
+                              Ver Relatório
+                            </Button>
+                          </Box>
+                        </Grid>
+
+                        {/* Dicas e Recursos */}
+                        <Grid item xs={12} md={6}>
+                          <Box textAlign="center" p={3} sx={{ 
+                            background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                            borderRadius: 3,
+                            color: '#8B4513'
+                          }}>
+                            <Lightbulb sx={{ fontSize: 40, mb: 1 }} />
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                              Dicas do Sistema
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 2, opacity: 0.8 }}>
+                              Otimize o uso das suas salas
+                            </Typography>
+                            <Button 
+                              variant="contained"
+                              sx={{ 
+                                bgcolor: 'rgba(139,69,19,0.2)',
+                                color: '#8B4513',
+                                '&:hover': { bgcolor: 'rgba(139,69,19,0.3)' }
+                              }}
+                              onClick={() => setShowTips(true)}
+                              startIcon={<Info />}
+                            >
+                              Ver Dicas
+                            </Button>
+                          </Box>
+                        </Grid>
+
+                        {/* Estatísticas Rápidas */}
+                        <Grid item xs={12}>
+                          <Card sx={{ background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' }}>
+                            <CardContent>
+                              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                                📊 Resumo do Dia
+                              </Typography>
+                              <Grid container spacing={2}>
+                                <Grid item xs={3}>
+                                  <Box textAlign="center">
+                                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                                      {reservasStats.hoje}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Reservas Hoje
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                                <Grid item xs={3}>
+                                  <Box textAlign="center">
+                                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#388e3c' }}>
+                                      {salasStats.disponiveis}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Salas Livres
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                                <Grid item xs={3}>
+                                  <Box textAlign="center">
+                                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
+                                      {salasStats.ocupadas}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Em Uso
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                                <Grid item xs={3}>
+                                  <Box textAlign="center">
+                                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#7b1fa2' }}>
+                                      {Math.round((salasStats.ocupadas / salasStats.total) * 100) || 0}%
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Ocupação
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              </Grid>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
                     </Box>
                   )}
                 </CardContent>
