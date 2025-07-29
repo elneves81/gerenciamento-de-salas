@@ -73,11 +73,72 @@
         </div>
 
         <button onclick="setupAdmin()">🚀 Criar/Resetar Usuário Admin</button>
+        <button onclick="checkDatabase()">🔍 Verificar Banco de Dados</button>
         
         <div id="result"></div>
     </div>
 
     <script>
+        async function checkDatabase() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="info">🔍 Verificando estrutura do banco de dados...</div>';
+
+            try {
+                const response = await fetch('/.netlify/functions/db-check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    let tablesInfo = '';
+                    let currentTable = '';
+                    
+                    data.tables.forEach(col => {
+                        if (col.table_name !== currentTable) {
+                            if (currentTable) tablesInfo += '<br>';
+                            tablesInfo += `<strong>📋 ${col.table_name}:</strong><br>`;
+                            currentTable = col.table_name;
+                        }
+                        tablesInfo += `  • ${col.column_name} (${col.data_type}) - ${col.is_nullable === 'YES' ? 'Nullable' : 'Not Null'}<br>`;
+                    });
+
+                    let countsInfo = '<br><strong>📊 Registros por tabela:</strong><br>';
+                    Object.keys(data.counts).forEach(table => {
+                        countsInfo += `  • ${table}: ${data.counts[table]}<br>`;
+                    });
+
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>✅ Banco de dados verificado!</strong><br><br>
+                            <strong>🔗 Conexão:</strong> ${data.database_url}<br><br>
+                            <strong>🗃️ Estrutura das Tabelas:</strong><br>
+                            ${tablesInfo}
+                            ${countsInfo}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <strong>❌ Erro:</strong> ${data.message}<br>
+                            <strong>Detalhes:</strong> ${data.error}<br>
+                            <strong>Conexão:</strong> ${data.database_url}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>❌ Erro de Conexão:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
         async function setupAdmin() {
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = '<div class="info">⏳ Configurando usuário admin...</div>';
@@ -107,7 +168,11 @@
                     resultDiv.innerHTML = `
                         <div class="error">
                             <strong>❌ Erro:</strong> ${data.message}<br>
-                            <strong>Detalhes:</strong> ${data.error}
+                            <strong>Detalhes:</strong> ${data.error}<br><br>
+                            ${data.debug_info ? `<strong>🔍 Debug:</strong><br>
+                            • Banco: ${data.debug_info.database_url}<br>
+                            • Erro: ${data.debug_info.error_details}<br><br>` : ''}
+                            ${data.stack ? `<strong>📋 Stack Trace:</strong><br><pre>${data.stack}</pre>` : ''}
                         </div>
                     `;
                 }

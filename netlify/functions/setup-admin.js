@@ -21,9 +21,36 @@ exports.handler = async (event, context) => {
   try {
     await client.connect();
 
-    // Verificar se admin já existe na nova tabela usuarios
+    // 1. Verificar se a tabela usuarios existe
+    const tableCheck = await client.query(`
+      SELECT table_name FROM information_schema.tables 
+      WHERE table_name = 'usuarios' AND table_schema = 'public'
+    `);
+
+    if (tableCheck.rows.length === 0) {
+      // Tabela usuarios não existe, vamos criá-la
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS usuarios (
+          id SERIAL PRIMARY KEY,
+          username VARCHAR(50) UNIQUE NOT NULL,
+          email VARCHAR(100) UNIQUE NOT NULL,
+          password VARCHAR(255),
+          nome VARCHAR(100) NOT NULL,
+          telefone VARCHAR(20),
+          google_id VARCHAR(255) UNIQUE,
+          avatar_url TEXT,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+
+      // Criar índices
+      await client.query('CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email)');
+      await client.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_google_id ON usuarios(google_id)');
+    }
+
+    // 2. Verificar se admin já existe
     const existingUser = await client.query(
-      'SELECT username FROM usuarios WHERE username = $1 OR email = $2',
+      'SELECT username, email FROM usuarios WHERE username = $1 OR email = $2',
       ['admin', 'admin@salafacil.com']
     );
 
@@ -52,10 +79,10 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Criar hash da senha admin123
+    // 3. Criar hash da senha admin123
     const hashedPassword = await bcrypt.hash('admin123', 12);
 
-    // Inserir usuário admin na nova tabela usuarios
+    // 4. Inserir usuário admin na tabela usuarios
     const result = await client.query(`
       INSERT INTO usuarios (username, email, password, nome, telefone, created_at)
       VALUES ($1, $2, $3, $4, $5, NOW())
@@ -98,7 +125,12 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: false,
         error: error.message,
-        message: 'Erro ao criar/resetar usuário admin. Verifique se a tabela usuarios existe.'
+        stack: error.stack,
+        message: 'Erro ao criar/resetar usuário admin.',
+        debug_info: {
+          database_url: process.env.DATABASE_URL ? 'URL configurada' : 'URL não configurada',
+          error_details: error.toString()
+        }
       })
     };
   }
