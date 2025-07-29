@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import StorageInitializer from './components/StorageInitializer';
-import HeaderPremium from './components/HeaderPremium';
+import HeaderModerno from './components/HeaderModerno';
 import Dashboard from './pages/DashboardPremium';
 import Salas from './pages/Salas';
 import ReservasModerno from './pages/ReservasModerno';
@@ -46,7 +46,7 @@ function AppContent() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/salas" element={
           <>
-            <HeaderPremium currentPage="salas" />
+            <HeaderModerno currentPage="salas" />
             <main className="min-h-screen pt-4">
               <Salas />
             </main>
@@ -56,7 +56,7 @@ function AppContent() {
         <Route path="/admin/salas" element={<GerenciarSalas />} />
         <Route path="/reservas" element={
           <>
-            <HeaderPremium currentPage="reservas" />
+            <HeaderModerno currentPage="reservas" />
             <main className="min-h-screen pt-4">
               <ReservasModerno />
             </main>
@@ -64,7 +64,7 @@ function AppContent() {
         } />
         <Route path="/nova-reserva" element={
           <>
-            <HeaderPremium currentPage="nova-reserva" />
+            <HeaderModerno currentPage="nova-reserva" />
             <main className="min-h-screen pt-4">
               <NovaReserva />
             </main>
