@@ -14,6 +14,8 @@ const api = axios.create({
   timeout: API_CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache'
   },
 });
 
@@ -147,6 +149,26 @@ api.getWithRetry = (url, config) => apiWithRetry({ method: 'get', url, ...config
 api.postWithRetry = (url, data, config) => apiWithRetry({ method: 'post', url, data, ...config });
 api.putWithRetry = (url, data, config) => apiWithRetry({ method: 'put', url, data, ...config });
 api.deleteWithRetry = (url, config) => apiWithRetry({ method: 'delete', url, ...config });
+
+// Função para adicionar cache buster
+const addCacheBuster = (url) => {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}_t=${Date.now()}`;
+};
+
+// Override dos métodos para adicionar cache buster
+const originalGet = api.get;
+api.get = (url, config = {}) => {
+  const urlWithCacheBuster = addCacheBuster(url);
+  return originalGet.call(api, urlWithCacheBuster, {
+    ...config,
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      ...config.headers
+    }
+  });
+};
 
 // Função para limpar auth (útil para logout)
 api.clearAuth = clearAuthData;
