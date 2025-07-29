@@ -12,7 +12,7 @@ const Salas = () => {
 
   const loadSalas = async () => {
     try {
-      const response = await api.get('/salas/');
+      const response = await api.get('/get-salas/');
       setSalas(response.data);
     } catch (error) {
       console.error('Erro ao carregar salas:', error);

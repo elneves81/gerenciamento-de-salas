@@ -189,7 +189,7 @@ const DashboardPremium = () => {
       // Carregar dados em paralelo com error handling
       const [userResponse, salasResponse, agendamentosResponse] = await Promise.allSettled([
         api.get('/auth'),
-        api.get('/salas'),
+        api.get('/get-salas'),
         api.get('/agendamentos')
       ]);
       
