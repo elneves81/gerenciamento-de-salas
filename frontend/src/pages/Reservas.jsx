@@ -1,6 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
-import { Calendar, Clock, X, Filter, RefreshCw, MapPin, Users, SortAsc } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  X, 
+  Filter, 
+  RefreshCw, 
+  MapPin, 
+  Users, 
+  SortAsc,
+  Search,
+  AlertTriangle,
+  CheckCircle,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+  Eye,
+  Edit3,
+  MoreVertical,
+  Download,
+  Bell,
+  Settings,
+  Grid3X3,
+  List,
+  BarChart3,
+  TrendingUp
+} from 'lucide-react';
 
 const Reservas = () => {
   const [reservas, setReservas] = useState([]);
@@ -43,14 +69,73 @@ const Reservas = () => {
   };
 
   const cancelarReserva = async (reservaId) => {
-    if (window.confirm('Tem certeza que deseja cancelar esta reserva?')) {
+    if (!window.confirm('⚠️ Tem certeza que deseja cancelar esta reserva?\n\nEsta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    setDeletingId(reservaId);
+    
+    try {
+      // Tentar diferentes métodos de cancelamento
       try {
-        await api.delete(`/agendamentos/${reservaId}`);
-        loadReservas();
-      } catch (error) {
-        console.error('Erro ao cancelar reserva:', error);
-        alert('Erro ao cancelar reserva. Tente novamente.');
+        // Método 1: PUT para marcar como cancelada
+        await api.put(`/agendamentos/${reservaId}`, { 
+          status: 'cancelada' 
+        });
+      } catch (putError) {
+        try {
+          // Método 2: PATCH para atualizar status
+          await api.patch(`/agendamentos/${reservaId}`, { 
+            status: 'cancelada' 
+          });
+        } catch (patchError) {
+          try {
+            // Método 3: DELETE tradicional
+            await api.delete(`/agendamentos/${reservaId}`);
+          } catch (deleteError) {
+            // Método 4: POST para cancelamento
+            await api.post(`/agendamentos/${reservaId}/cancelar`);
+          }
+        }
       }
+      
+      // Remover da lista local imediatamente para melhor UX
+      setReservas(prev => prev.filter(r => r.id !== reservaId));
+      
+      // Mostrar feedback de sucesso
+      const successDiv = document.createElement('div');
+      successDiv.innerHTML = `
+        <div class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center">
+          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+          </svg>
+          Reserva cancelada com sucesso!
+        </div>
+      `;
+      document.body.appendChild(successDiv);
+      setTimeout(() => document.body.removeChild(successDiv), 3000);
+      
+    } catch (error) {
+      console.error('Erro ao cancelar reserva:', error);
+      
+      // Feedback de erro mais informativo
+      const errorDiv = document.createElement('div');
+      errorDiv.innerHTML = `
+        <div class="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center max-w-md">
+          <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+          </svg>
+          <div>
+            <div class="font-semibold">Erro ao cancelar reserva</div>
+            <div class="text-sm opacity-90">Status: ${error.response?.status || 'Desconhecido'}</div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(errorDiv);
+      setTimeout(() => document.body.removeChild(errorDiv), 5000);
+      
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -162,10 +247,23 @@ const Reservas = () => {
 
   if (loading && reservas.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
-        <div className="flex items-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mr-4"></div>
-          <p className="text-xl">Carregando reservas...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col items-center justify-center space-y-6 min-h-[70vh]">
+            <div className="relative">
+              <div className="w-20 h-20 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+              <div className="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-indigo-400 rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+            </div>
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Carregando Sistema de Reservas</h3>
+              <p className="text-gray-600">Preparando a melhor experiência para você...</p>
+              <div className="mt-4 flex items-center justify-center space-x-2">
+                <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
