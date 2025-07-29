@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Carregar usuário com retry e timeout
+  // Carregar usuário com retry e timeout melhorado
   const loadUser = useCallback(async (retryCount = 0) => {
     if (!token) {
       setLoading(false);
@@ -50,48 +50,56 @@ export const AuthProvider = ({ children }) => {
       abortControllerRef.current.abort();
     }
 
+    // Criar novo AbortController
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
+
     try {
       setError(null);
       setAuthHeader(token);
 
-      // Criar novo AbortController
-      abortControllerRef.current = new AbortController();
-      const controller = abortControllerRef.current;
-      
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
-      
-      const response = await api.get('/auth', {
-        signal: controller.signal
+      const response = await api.get('/auth/me', {
+        signal,
+        timeout: 10000, // 10 segundos de timeout
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       });
-      
-      clearTimeout(timeoutId);
-      setUser(response.data);
+
+      if (response.data) {
+        setUser(response.data);
+        setError(null);
+      }
     } catch (error) {
-      if (error.name === 'AbortError') {
-        console.log('Requisição cancelada');
+      // Não tratar erro se foi cancelado
+      if (signal.aborted || error.name === 'AbortError' || error.code === 'ECONNABORTED') {
+        console.log('Requisição de usuário foi cancelada ou timeout');
         return;
       }
 
       console.error('Erro ao carregar usuário:', error);
       
-      if (error.response?.status === 401) {
-        // Token inválido, limpar dados
-        setToken(null);
-        setRefreshToken(null);
-        setAuthHeader(null);
-        setError('Sessão expirada');
-      } else if (retryCount < 1) {
-        // Retry apenas 1 vez
-        setTimeout(() => loadUser(retryCount + 1), 2000);
+      // Retry logic melhorado
+      if (retryCount < 2 && error.response?.status !== 401) {
+        console.log(`Tentativa ${retryCount + 1} de recarregar usuário...`);
+        setTimeout(() => loadUser(retryCount + 1), 1000 * (retryCount + 1));
         return;
-      } else {
-        setError('Erro ao carregar dados do usuário');
       }
+
+      // Se erro 401 ou muitas tentativas, limpar auth
+      if (error.response?.status === 401 || retryCount >= 2) {
+        console.log('Token inválido ou muitas tentativas, fazendo logout...');
+        logout();
+        return;
+      }
+
+      setError('Erro ao carregar dados do usuário');
     } finally {
       setLoading(false);
       abortControllerRef.current = null;
     }
-  }, [token, setToken, setRefreshToken, setAuthHeader]);
+  }, [token, setAuthHeader]);
 
   // Login otimizado
   const login = useCallback(async (username, password) => {
