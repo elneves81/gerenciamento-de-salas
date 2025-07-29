@@ -41,7 +41,7 @@ exports.handler = async (event, context) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         
         const result = await client.query(
-          'SELECT id, username, email, nome, telefone FROM usuarios WHERE id = ',
+          'SELECT id, username, email, nome, telefone FROM usuarios WHERE id = $1',
           [decoded.user_id]
         );
 
@@ -70,18 +70,18 @@ exports.handler = async (event, context) => {
     if (event.httpMethod === 'POST') {
       const body = JSON.parse(event.body);
       
-      // Suporte para formato antigo
+      // Suporte para formato antigo (compatibilidade)
       if (body.action === 'login') {
         const { username, password } = body;
         
         let result = await client.query(
-          'SELECT * FROM usuarios WHERE username =  OR email = ',
+          'SELECT * FROM usuarios WHERE username = $1 OR email = $1',
           [username]
         );
 
         if (result.rows.length === 0) {
           result = await client.query(
-            'SELECT * FROM auth_user WHERE username = ',
+            'SELECT * FROM auth_user WHERE username = $1',
             [username]
           );
         }
@@ -105,24 +105,17 @@ exports.handler = async (event, context) => {
           };
         }
 
-        const accessToken = jwt.sign(
+        const token = jwt.sign(
           { user_id: user.id, username: user.username },
           JWT_SECRET,
           { expiresIn: '24h' }
-        );
-
-        const refreshToken = jwt.sign(
-          { user_id: user.id },
-          JWT_SECRET,
-          { expiresIn: '7d' }
         );
 
         return {
           statusCode: 200,
           headers,
           body: JSON.stringify({
-            access: accessToken,
-            refresh: refreshToken,
+            access: token,
             user: {
               id: user.id,
               username: user.username,
@@ -133,7 +126,7 @@ exports.handler = async (event, context) => {
         };
       }
 
-      // Formato novo
+      // Formato novo (login direto)
       const { email, password } = body;
       
       if (!email || !password) {
@@ -145,7 +138,7 @@ exports.handler = async (event, context) => {
       }
 
       const result = await client.query(
-        'SELECT * FROM usuarios WHERE email = ',
+        'SELECT * FROM usuarios WHERE email = $1',
         [email]
       );
 
@@ -176,24 +169,17 @@ exports.handler = async (event, context) => {
         };
       }
 
-      const accessToken = jwt.sign(
+      const token = jwt.sign(
         { user_id: user.id, username: user.username },
         JWT_SECRET,
         { expiresIn: '24h' }
-      );
-
-      const refreshToken = jwt.sign(
-        { user_id: user.id },
-        JWT_SECRET,
-        { expiresIn: '7d' }
       );
 
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          access: accessToken,
-          refresh: refreshToken,
+          access: token,
           user: {
             id: user.id,
             username: user.username,
