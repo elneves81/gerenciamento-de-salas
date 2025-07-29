@@ -43,6 +43,13 @@ const AuthPage = () => {
 
   // Carregar Google Identity Services
   useEffect(() => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    if (!googleClientId) {
+      console.warn('Google Client ID não configurado. Login com Google desabilitado.');
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
@@ -52,7 +59,7 @@ const AuthPage = () => {
     script.onload = () => {
       if (window.google) {
         window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          client_id: googleClientId,
           callback: handleGoogleCallback
         });
       }
@@ -322,10 +329,13 @@ const AuthPage = () => {
             size="large"
             startIcon={<GoogleIcon />}
             onClick={handleGoogleLogin}
-            disabled={loading}
+            disabled={loading || !import.meta.env.VITE_GOOGLE_CLIENT_ID}
             sx={{ py: 1.5 }}
           >
-            {tabValue === 0 ? 'Entrar com Google' : 'Registrar com Google'}
+            {!import.meta.env.VITE_GOOGLE_CLIENT_ID ? 
+              'Google OAuth não configurado' : 
+              (tabValue === 0 ? 'Entrar com Google' : 'Registrar com Google')
+            }
           </Button>
 
           <Typography variant="body2" align="center" sx={{ mt: 3 }}>
