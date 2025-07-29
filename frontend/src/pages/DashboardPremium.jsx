@@ -201,20 +201,43 @@ const DashboardPremium = () => {
       // Processar resposta das salas
       let salasData = [];
       if (salasResponse.status === 'fulfilled') {
-        salasData = Array.isArray(salasResponse.value.data) 
-          ? salasResponse.value.data 
-          : salasResponse.value.data?.results || [];
-        setSalas(salasData);
+        const responseData = salasResponse.value.data;
+        if (Array.isArray(responseData)) {
+          salasData = responseData;
+        } else if (responseData && Array.isArray(responseData.results)) {
+          salasData = responseData.results;
+        } else if (responseData && typeof responseData === 'object') {
+          // Se for um objeto, tenta extrair array
+          salasData = Object.values(responseData).filter(item => 
+            item && typeof item === 'object' && item.id
+          );
+        }
+        setSalas(Array.isArray(salasData) ? salasData : []);
+      } else {
+        console.warn('Erro ao carregar salas:', salasResponse.reason);
+        setSalas([]);
       }
       
       // Processar resposta dos agendamentos
       let reservasData = [];
       if (agendamentosResponse.status === 'fulfilled') {
-        reservasData = Array.isArray(agendamentosResponse.value.data) 
-          ? agendamentosResponse.value.data 
-          : agendamentosResponse.value.data?.results || [];
-        setReservas(reservasData);
-        setAllReservas(reservasData);
+        const responseData = agendamentosResponse.value.data;
+        if (Array.isArray(responseData)) {
+          reservasData = responseData;
+        } else if (responseData && Array.isArray(responseData.results)) {
+          reservasData = responseData.results;
+        } else if (responseData && typeof responseData === 'object') {
+          // Se for um objeto, tenta extrair array
+          reservasData = Object.values(responseData).filter(item => 
+            item && typeof item === 'object' && item.id
+          );
+        }
+        setReservas(Array.isArray(reservasData) ? reservasData : []);
+        setAllReservas(Array.isArray(reservasData) ? reservasData : []);
+      } else {
+        console.warn('Erro ao carregar agendamentos:', agendamentosResponse.reason);
+        setReservas([]);
+        setAllReservas([]);
       }
       
       // Calcular estatísticas do dashboard

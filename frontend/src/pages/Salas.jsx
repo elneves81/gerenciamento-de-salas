@@ -13,9 +13,21 @@ const Salas = () => {
   const loadSalas = async () => {
     try {
       const response = await api.get('/get-salas/');
-      setSalas(response.data);
+      const data = response.data;
+      
+      // Garantir que sempre temos um array
+      if (Array.isArray(data)) {
+        setSalas(data);
+      } else if (data && Array.isArray(data.results)) {
+        setSalas(data.results);
+      } else if (data && typeof data === 'object') {
+        setSalas(Object.values(data).filter(item => item && item.id));
+      } else {
+        setSalas([]);
+      }
     } catch (error) {
       console.error('Erro ao carregar salas:', error);
+      setSalas([]); // Garantir array vazio em caso de erro
     } finally {
       setLoading(false);
     }
