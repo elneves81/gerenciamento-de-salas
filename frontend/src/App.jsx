@@ -5,7 +5,7 @@ import StorageInitializer from './components/StorageInitializer';
 import HeaderPremium from './components/HeaderPremium';
 import Dashboard from './pages/DashboardPremium';
 import Salas from './pages/Salas';
-import ReservasProfessional from './pages/ReservasProfessional';
+import ReservasModerno from './pages/ReservasModerno';
 import AuthPage from './pages/AuthPage';
 import NovaReserva from './pages/NovaReserva';
 import GerenciarSalas from './pages/GerenciarSalas';
@@ -58,7 +58,7 @@ function AppContent() {
           <>
             <HeaderPremium currentPage="reservas" />
             <main className="min-h-screen pt-4">
-              <ReservasProfessional />
+              <ReservasModerno />
             </main>
           </>
         } />
