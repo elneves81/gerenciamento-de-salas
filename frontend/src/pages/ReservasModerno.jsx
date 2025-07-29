@@ -206,7 +206,7 @@ const ReservasModerno = () => {
   };
 
   return (
-    <div className="reservas-moderno">
+    <div className="reservas-moderno" data-page="reservas">
       <style jsx>{`
         .reservas-moderno {
           max-width: 1400px;

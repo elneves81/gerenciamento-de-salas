@@ -44,32 +44,41 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/salas" element={
-          <>
-            <HeaderModernoLimpo currentPage="salas" />
-            <main className="min-h-screen pt-4">
-              <Salas />
-            </main>
-          </>
-        } />
+        <Route 
+          path="/salas" 
+          element={
+            <div key="salas-page">
+              <HeaderModernoLimpo currentPage="salas" />
+              <main className="min-h-screen pt-4">
+                <Salas />
+              </main>
+            </div>
+          } 
+        />
         <Route path="/gerenciar-salas" element={<GerenciarSalas />} />
         <Route path="/admin/salas" element={<GerenciarSalas />} />
-        <Route path="/reservas" element={
-          <>
-            <HeaderModernoLimpo currentPage="reservas" />
-            <main className="min-h-screen pt-4">
-              <ReservasModerno />
-            </main>
-          </>
-        } />
-        <Route path="/nova-reserva" element={
-          <>
-            <HeaderModernoLimpo currentPage="nova-reserva" />
-            <main className="min-h-screen pt-4">
-              <NovaReserva />
-            </main>
-          </>
-        } />
+        <Route 
+          path="/reservas" 
+          element={
+            <div key="reservas-page">
+              <HeaderModernoLimpo currentPage="reservas" />
+              <main className="min-h-screen pt-4">
+                <ReservasModerno />
+              </main>
+            </div>
+          } 
+        />
+        <Route 
+          path="/nova-reserva" 
+          element={
+            <div key="nova-reserva-page">
+              <HeaderModernoLimpo currentPage="nova-reserva" />
+              <main className="min-h-screen pt-4">
+                <NovaReserva />
+              </main>
+            </div>
+          } 
+        />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </>

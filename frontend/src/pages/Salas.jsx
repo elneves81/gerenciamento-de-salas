@@ -42,9 +42,9 @@ const Salas = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="salas-page-container space-y-6" data-page="salas">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Salas</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Salas Disponíveis</h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
