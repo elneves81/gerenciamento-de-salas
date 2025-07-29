@@ -33,6 +33,20 @@ exports.handler = async (event, context) => {
   try {
     await client.connect();
 
+    // Verificar se precisa criar a tabela agendamento_agendamento
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS agendamento_agendamento (
+        id SERIAL PRIMARY KEY,
+        sala_id INTEGER REFERENCES agendamento_sala(id),
+        data_inicio TIMESTAMP NOT NULL,
+        data_fim TIMESTAMP NOT NULL,
+        titulo VARCHAR(200) NOT NULL,
+        descricao TEXT,
+        usuario_id INTEGER,
+        criado_em TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     switch (event.httpMethod) {
       case 'GET':
         // Listar agendamentos
