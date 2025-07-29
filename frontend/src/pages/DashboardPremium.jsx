@@ -87,7 +87,7 @@ import { ptBR } from 'date-fns/locale';
 import api from '../services/api';
 import GraficosInterativosSimples from '../components/GraficosInterativosSimples';
 import RelatoriosAvancados from '../components/RelatoriosAvancados';
-import IntegracaoCalendarioSimples from '../components/IntegracaoCalendarioSimples';
+import GoogleCalendarStyle from '../components/GoogleCalendarStyle';
 import { useNotifications, useAutoNotifications } from '../components/NotificationSystem';
 
 const DashboardPremium = () => {
@@ -1625,8 +1625,8 @@ const DashboardPremium = () => {
 
         {/* Tab de Calendário */}
         {activeTab === 3 && (
-          <Box sx={{ mt: 2 }}>
-            <IntegracaoCalendarioSimples reservas={allReservas} salas={salas} />
+          <Box sx={{ mt: 2, height: '70vh' }}>
+            <GoogleCalendarStyle reservas={allReservas} salas={salas} />
           </Box>
         )}
 
