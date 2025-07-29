@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { NotificationCenter } from './NotificationSystem';
 import { 
   Building2,
-  Bell,
   Settings,
   Search,
   LogOut,
@@ -136,30 +136,7 @@ const HeaderSimples = ({ title = "Sistema de Reservas" }) => {
           gap: '16px'
         }}>
           {/* Notificações */}
-          <button style={{
-            background: 'rgba(255, 255, 255, 0.15)',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '10px',
-            color: 'white',
-            cursor: 'pointer',
-            position: 'relative',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.25)'}
-          onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.15)'}
-          >
-            <Bell size={18} />
-            <span style={{
-              position: 'absolute',
-              top: '6px',
-              right: '6px',
-              width: '8px',
-              height: '8px',
-              background: '#F56565',
-              borderRadius: '50%'
-            }}></span>
-          </button>
+          <NotificationCenter />
 
           {/* Configurações */}
           <button style={{

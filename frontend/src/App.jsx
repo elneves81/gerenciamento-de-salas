@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './components/NotificationSystem';
 import StorageInitializer from './components/StorageInitializer';
 import HeaderModernoLimpo from './components/HeaderModernoLimpo';
 import HeaderSimples from './components/HeaderSimples';
@@ -14,11 +15,13 @@ function App() {
   return (
     <StorageInitializer>
       <AuthProvider>
-        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <div className="min-h-screen bg-gray-50">
-            <AppContent />
-          </div>
-        </Router>
+        <NotificationProvider>
+          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <div className="min-h-screen bg-gray-50">
+              <AppContent />
+            </div>
+          </Router>
+        </NotificationProvider>
       </AuthProvider>
     </StorageInitializer>
   );

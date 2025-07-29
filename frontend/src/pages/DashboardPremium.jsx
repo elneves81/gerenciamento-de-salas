@@ -85,10 +85,15 @@ import {
 import { format, isToday, isTomorrow, parseISO, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import api from '../services/api';
+import GraficosInterativos from '../components/GraficosInterativos';
+import RelatoriosAvancados from '../components/RelatoriosAvancados';
+import IntegracaoCalendario from '../components/IntegracaoCalendario';
+import { useNotifications, useAutoNotifications } from '../components/NotificationSystem';
 
 const DashboardPremium = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { addNotification } = useNotifications();
   
   // Estados principais
   const [userData, setUserData] = useState(null);
@@ -177,6 +182,9 @@ const DashboardPremium = () => {
     }, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Hook para notificações automáticas
+  const { notifyReservationEvent } = useAutoNotifications(reservas);
 
   const loadAllData = async () => {
     try {
@@ -673,6 +681,16 @@ const DashboardPremium = () => {
             <Tab 
               label="Relatórios" 
               icon={<BarChart />} 
+              iconPosition="start"
+            />
+            <Tab 
+              label="Calendário" 
+              icon={<CalendarToday />} 
+              iconPosition="start"
+            />
+            <Tab 
+              label="Gráficos" 
+              icon={<Analytics />} 
               iconPosition="start"
             />
           </Tabs>
@@ -1603,6 +1621,20 @@ const DashboardPremium = () => {
               </Card>
             </Grid>
           </Grid>
+        )}
+
+        {/* Tab de Calendário */}
+        {activeTab === 3 && (
+          <Box sx={{ mt: 2 }}>
+            <IntegracaoCalendario reservas={allReservas} salas={allSalas} />
+          </Box>
+        )}
+
+        {/* Tab de Gráficos */}
+        {activeTab === 4 && (
+          <Box sx={{ mt: 2 }}>
+            <GraficosInterativos reservas={allReservas} salas={allSalas} />
+          </Box>
         )}
 
         {/* FAB para Nova Reserva */}
