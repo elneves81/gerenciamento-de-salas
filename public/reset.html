@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset Sistema</title>
+</head>
+<body>
+    <h1>Limpando dados do sistema...</h1>
+    <script>
+        // Limpar todo o localStorage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Remover cookies
+        document.cookie.split(";").forEach(function(c) { 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        });
+        
+        alert('Dados limpos! Redirecionando...');
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 2000);
+    </script>
+    <p>Se não redirecionar automaticamente, <a href="/">clique aqui</a></p>
+</body>
+</html>
