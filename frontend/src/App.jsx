@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import StorageInitializer from './components/StorageInitializer';
 import HeaderModernoLimpo from './components/HeaderModernoLimpo';
+import HeaderSimples from './components/HeaderSimples';
 import Dashboard from './pages/DashboardPremium';
 import ReservasModerno from './pages/ReservasModerno';
 import AuthPage from './pages/AuthPage';
@@ -49,7 +50,7 @@ function AppContent() {
           path="/reservas" 
           element={
             <div key="reservas-page">
-              <HeaderModernoLimpo currentPage="reservas" />
+              <HeaderSimples />
               <main className="min-h-screen pt-4">
                 <ReservasModerno />
               </main>
