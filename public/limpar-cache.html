@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Limpar Cache - Sistema de Salas</title>
+</head>
+<body>
+    <h1>🧹 Limpeza de Cache</h1>
+    <p>Limpando localStorage...</p>
+    <script>
+        // Limpar localStorage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Mostrar mensagem
+        document.body.innerHTML += '<p style="color: green;">✅ Cache limpo com sucesso!</p>';
+        document.body.innerHTML += '<p><a href="/">← Voltar ao sistema</a></p>';
+        
+        console.log('Cache limpo!');
+        
+        // Redirecionar após 3 segundos
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 3000);
+    </script>
+</body>
+</html>
