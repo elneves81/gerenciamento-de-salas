@@ -214,3 +214,4 @@ exports.handler = async (event, context) => {
     }
   }
 };
+// Fixed module.exports
