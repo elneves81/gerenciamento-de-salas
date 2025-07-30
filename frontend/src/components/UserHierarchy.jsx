@@ -8,8 +8,10 @@ import {
   Chip,
   IconButton,
   Collapse,
-  TreeView,
-  TreeItem,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   Tooltip,
   Paper,
   Grid
@@ -27,7 +29,6 @@ import api from '../services/api';
 
 const UserHierarchy = () => {
   const [hierarchyData, setHierarchyData] = useState([]);
-  const [expanded, setExpanded] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,10 +42,6 @@ const UserHierarchy = () => {
       // Organizar dados em árvore
       const organized = organizeHierarchy(response.data);
       setHierarchyData(organized);
-      
-      // Expandir primeiro nível por padrão
-      const firstLevelIds = organized.map(item => `user-${item.id}`);
-      setExpanded(firstLevelIds);
     } catch (error) {
       console.error('Erro ao carregar hierarquia:', error);
     } finally {
@@ -71,10 +68,6 @@ const UserHierarchy = () => {
     });
 
     return rootUsers;
-  };
-
-  const handleToggle = (event, nodeIds) => {
-    setExpanded(nodeIds);
   };
 
   const renderUserCard = (user) => (
@@ -149,23 +142,13 @@ const UserHierarchy = () => {
     </Card>
   );
 
-  const renderTreeItem = (user) => (
-    <TreeItem
-      key={user.id}
-      nodeId={`user-${user.id}`}
-      label={renderUserCard(user)}
-      sx={{
-        '& .MuiTreeItem-content': {
-          padding: 0,
-          margin: 0
-        },
-        '& .MuiTreeItem-label': {
-          padding: 0
-        }
-      }}
-    >
-      {user.children && user.children.map(child => renderTreeItem(child))}
-    </TreeItem>
+  const renderUserItem = (user, level = 0) => (
+    <Box key={user.id} sx={{ ml: level * 3 }}>
+      <Box sx={{ mb: 2 }}>
+        {renderUserCard(user)}
+      </Box>
+      {user.children && user.children.map(child => renderUserItem(child, level + 1))}
+    </Box>
   );
 
   if (loading) {
@@ -235,23 +218,11 @@ const UserHierarchy = () => {
         </Grid>
       </Grid>
 
-      {/* Árvore hierárquica */}
+      {/* Hierarquia de usuários */}
       <Paper sx={{ p: 2 }}>
-        <TreeView
-          defaultCollapseIcon={<ExpandMoreIcon />}
-          defaultExpandIcon={<ChevronRightIcon />}
-          expanded={expanded}
-          onNodeToggle={handleToggle}
-          sx={{
-            '& .MuiTreeItem-root': {
-              '& .MuiTreeItem-content': {
-                padding: '4px 0',
-              }
-            }
-          }}
-        >
-          {hierarchyData.map(user => renderTreeItem(user))}
-        </TreeView>
+        <Box>
+          {hierarchyData.map(user => renderUserItem(user))}
+        </Box>
 
         {hierarchyData.length === 0 && (
           <Box textAlign="center" py={4}>
