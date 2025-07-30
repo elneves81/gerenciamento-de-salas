@@ -1660,7 +1660,7 @@ const DashboardPremium = () => {
             <GoogleCalendarResponsive 
               reservas={allReservas} 
               salas={salas} 
-              onNovaReserva={loadData}
+              onNovaReserva={loadAllData}
             />
           </Box>
         )}
