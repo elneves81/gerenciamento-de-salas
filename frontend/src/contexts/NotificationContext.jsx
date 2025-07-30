@@ -63,13 +63,17 @@ export const NotificationProvider = ({ children }) => {
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       registerServiceWorker();
     }
-    
-    // Polling para notificações
+  }, []);
+
+  // Polling para notificações - só inicia quando o usuário está logado
+  useEffect(() => {
+    if (!user?.id) return;
+
     loadNotifications();
     const interval = setInterval(loadNotifications, 30000); // 30 segundos
     
     return () => clearInterval(interval);
-  }, []);
+  }, [user?.id]);
 
   const registerServiceWorker = async () => {
     try {
@@ -123,7 +127,15 @@ export const NotificationProvider = ({ children }) => {
 
   const loadNotifications = async () => {
     try {
-      const response = await api.get('/notifications/');
+      // Verificar se o usuário está logado
+      if (!user?.id) {
+        console.log('Usuário não está logado, pulando carregamento de notificações');
+        return;
+      }
+
+      const response = await api.get('/notifications/', {
+        params: { user_id: user.id }
+      });
       const notifs = response.data || [];
       setNotifications(notifs);
       

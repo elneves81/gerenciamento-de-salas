@@ -22,16 +22,16 @@ NODE_VERSION=18
 REACT_APP_FRONTEND_URL=https://your-app.netlify.app
 
 # ========================================
-# NETLIFY FUNCTIONS (BACKEND NO NETLIFY)
+# NETLIFY FUNCTIONS - VARIÁVEIS OBRIGATÓRIAS
+# (Configure no Netlify Dashboard > Environment Variables)
 # ========================================
 
-# === CONFIGURAÇÃO NO NETLIFY DASHBOARD ===
-# Site Settings > Environment Variables
-# Adicione TODAS essas variáveis:
+# === DATABASE (NEON) ===
+DATABASE_URL=postgresql://neondb_owner:npg_30vfdEapKsji@ep-polished-glitter-ad3ve5sr-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
 
-# === DATABASE ===
-# Para Neon PostgreSQL
-DATABASE_URL=postgresql://username:password@ep-xxx.us-east-1.aws.neon.tech/sala_facil_db?sslmode=require
+# === FRONTEND ===  
+REACT_APP_API_URL=https://gerenciamentosalas.netlify.app/.netlify/functions
+REACT_APP_FRONTEND_URL=https://gerenciamentosalas.netlify.app
 
 # === PUSH NOTIFICATIONS ===
 VAPID_PRIVATE_KEY=sua-chave-privada-vapid-aqui  
