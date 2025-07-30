@@ -30,7 +30,10 @@ import {
   Badge,
   Fab,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Tabs,
+  Tab,
+  Divider
 } from '@mui/material';
 import {
   AdminPanelSettings as AdminIcon,
@@ -44,21 +47,50 @@ import {
   Send as SendIcon,
   Visibility as ViewIcon,
   AccountTree as TreeIcon,
-  Dashboard as DashboardIcon
+  Dashboard as DashboardIcon,
+  MeetingRoom as RoomIcon,
+  Settings as SettingsIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import GerenciarSalas from './GerenciarSalas';
+import UserHierarchy from './UserHierarchy';
+
+// Componente de Tab Panel
+function TabPanel({ children, value, index, ...other }) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`admin-tabpanel-${index}`}
+      aria-labelledby={`admin-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ py: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
 
 const AdminPanel = () => {
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [tabValue, setTabValue] = useState(0);
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
     blockedUsers: 0,
     totalDepartments: 0
   });
+
+  // Função para gerenciar mudança de abas
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+  };
 
   // Dialogs state
   const [openUserDialog, setOpenUserDialog] = useState(false);
@@ -206,7 +238,7 @@ const AdminPanel = () => {
           Painel Administrativo
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Gerencie usuários, departamentos e notificações do sistema
+          Gerencie usuários, departamentos, salas e notificações do sistema
         </Typography>
       </Box>
 
@@ -287,44 +319,67 @@ const AdminPanel = () => {
         </Grid>
       </Grid>
 
-      {/* Botões de Ação */}
-      <Box mb={4} display="flex" gap={2} flexWrap="wrap">
-        <Button
-          variant="contained"
-          startIcon={<PersonAddIcon />}
-          onClick={() => setOpenUserDialog(true)}
-        >
-          Criar Usuário
-        </Button>
-        
-        <Button
-          variant="outlined"
-          startIcon={<NotificationIcon />}
-          onClick={() => setOpenNotificationDialog(true)}
-        >
-          Enviar Notificação
-        </Button>
-        
-        <Button
-          variant="outlined"
-          startIcon={<BusinessIcon />}
-          onClick={() => setOpenDepartmentDialog(true)}
-        >
-          Criar Departamento
-        </Button>
-        
-        <Button
-          variant="outlined"
-          startIcon={<TreeIcon />}
-          color="info"
-        >
-          Árvore de Usuários
-        </Button>
-      </Box>
-
-      {/* Tabela de Usuários */}
+      {/* Navegação em Abas */}
       <Card>
-        <CardContent>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={tabValue} onChange={handleTabChange} aria-label="admin tabs">
+            <Tab 
+              icon={<PeopleIcon />} 
+              label="Usuários" 
+              id="admin-tab-0"
+              aria-controls="admin-tabpanel-0"
+            />
+            <Tab 
+              icon={<RoomIcon />} 
+              label="Gerenciar Salas" 
+              id="admin-tab-1"
+              aria-controls="admin-tabpanel-1"
+            />
+            <Tab 
+              icon={<TreeIcon />} 
+              label="Hierarquia" 
+              id="admin-tab-2"
+              aria-controls="admin-tabpanel-2"
+            />
+            <Tab 
+              icon={<SettingsIcon />} 
+              label="Configurações" 
+              id="admin-tab-3"
+              aria-controls="admin-tabpanel-3"
+            />
+          </Tabs>
+        </Box>
+
+        {/* Tab Usuários */}
+        <TabPanel value={tabValue} index={0}>
+          {/* Botões de Ação para Usuários */}
+          <Box mb={3} display="flex" gap={2} flexWrap="wrap">
+            <Button
+              variant="contained"
+              startIcon={<PersonAddIcon />}
+              onClick={() => setOpenUserDialog(true)}
+            >
+              Criar Usuário
+            </Button>
+            
+            <Button
+              variant="outlined"
+              startIcon={<NotificationIcon />}
+              onClick={() => setOpenNotificationDialog(true)}
+            >
+              Enviar Notificação
+            </Button>
+            
+            <Button
+              variant="outlined"
+              startIcon={<BusinessIcon />}
+              onClick={() => setOpenDepartmentDialog(true)}
+            >
+              Criar Departamento
+            </Button>
+          </Box>
+
+          {/* Tabela de Usuários */}
           <Typography variant="h6" gutterBottom>
             <PeopleIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
             Gerenciamento de Usuários
@@ -415,7 +470,29 @@ const AdminPanel = () => {
               </TableBody>
             </Table>
           </TableContainer>
-        </CardContent>
+        </TabPanel>
+
+        {/* Tab Gerenciar Salas */}
+        <TabPanel value={tabValue} index={1}>
+          <GerenciarSalas />
+        </TabPanel>
+
+        {/* Tab Hierarquia */}
+        <TabPanel value={tabValue} index={2}>
+          <UserHierarchy users={users} departments={departments} />
+        </TabPanel>
+
+        {/* Tab Configurações */}
+        <TabPanel value={tabValue} index={3}>
+          <Box p={3}>
+            <Typography variant="h6" gutterBottom>
+              Configurações do Sistema
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Configurações avançadas do sistema serão implementadas aqui.
+            </Typography>
+          </Box>
+        </TabPanel>
       </Card>
 
       {/* Dialog de Criar/Editar Usuário */}
