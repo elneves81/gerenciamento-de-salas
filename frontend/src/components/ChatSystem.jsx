@@ -98,7 +98,7 @@ const ChatSystem = ({ onClose }) => {
 
   const loadConversations = async () => {
     try {
-      const response = await api.get('/chat/conversations/');
+      const response = await api.get('/conversations');
       setConversations(response.data || []);
       
       // Calcular mensagens não lidas
@@ -112,7 +112,7 @@ const ChatSystem = ({ onClose }) => {
   const loadMessages = async (conversationId) => {
     try {
       setLoading(true);
-      const response = await api.get(`/chat/conversations/${conversationId}/messages/`);
+      const response = await api.get(`/messages?conversation=${conversationId}`);
       setMessages(response.data || []);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
@@ -140,7 +140,7 @@ const ChatSystem = ({ onClose }) => {
         message_type: 'text'
       };
 
-      await api.post('/chat/messages/', messageData);
+      await api.post('/messages', messageData);
       setNewMessage('');
       await loadMessages(activeConversation.id);
       await loadConversations(); // Atualizar lista de conversas
@@ -157,7 +157,7 @@ const ChatSystem = ({ onClose }) => {
         name: isGroup ? 'Nova Conversa em Grupo' : null
       };
 
-      const response = await api.post('/chat/conversations/', conversationData);
+      const response = await api.post('/conversations', conversationData);
       setActiveConversation(response.data);
       setShowNewChatDialog(false);
       await loadConversations();
@@ -168,7 +168,7 @@ const ChatSystem = ({ onClose }) => {
 
   const markAsRead = async (conversationId) => {
     try {
-      await api.put(`/chat/conversations/${conversationId}/mark_read/`);
+      await api.put(`/conversations/${conversationId}/mark_read`);
     } catch (error) {
       console.error('Erro ao marcar como lida:', error);
     }
