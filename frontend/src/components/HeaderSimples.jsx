@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationCenter } from './NotificationSystem';
+import { useNotifications } from '../contexts/NotificationContext';
 import { 
   Building2,
   Settings,
@@ -13,6 +14,7 @@ import {
 
 const HeaderSimples = ({ title = "Sistema de Reservas" }) => {
   const { user, logout } = useAuth();
+  const { NotificationIcon } = useNotifications();
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,7 +139,10 @@ const HeaderSimples = ({ title = "Sistema de Reservas" }) => {
         }}>
           {/* Notificações */}
           <NotificationCenter />
-
+          
+          {/* Novo Sistema de Notificações */}
+          <NotificationIcon />
+          
           {/* Configurações */}
           <button style={{
             background: 'rgba(255, 255, 255, 0.15)',

@@ -14,3 +14,7 @@ six==1.17.0
 sqlparse==0.5.3
 tzdata==2025.2
 whitenoise==6.6.0
+
+# Dependências para Chat e Notificações
+pywebpush==1.14.0
+requests==2.31.0
