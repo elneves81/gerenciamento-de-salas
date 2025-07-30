@@ -93,6 +93,7 @@ import GraficosInterativosSimples from '../components/GraficosInterativosSimples
 import RelatoriosAvancados from '../components/RelatoriosAvancados';
 import GoogleCalendarResponsive from '../components/GoogleCalendarResponsive';
 import CalendarioEstilizado from '../components/CalendarioEstilizado';
+import AdminPanel from '../components/AdminPanel';
 import { useNotifications, useAutoNotifications } from '../components/NotificationSystem';
 import useReunioesAutoUpdate from '../hooks/useReunioesAutoUpdate';
 
@@ -154,6 +155,9 @@ const DashboardPremium = () => {
     data_fim: '',
     participantes: 1
   });
+  
+  // Estado para AdminPanel
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   
   // Função de logout
   const handleLogout = () => {
@@ -574,6 +578,14 @@ const DashboardPremium = () => {
                   sx={{ color: 'white' }}
                 >
                   <Settings />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Painel Administrativo">
+                <IconButton 
+                  onClick={() => setShowAdminPanel(true)}
+                  sx={{ color: 'white' }}
+                >
+                  <DashboardIcon />
                 </IconButton>
               </Tooltip>
               <Tooltip title={darkMode ? "Modo Claro" : "Modo Escuro"}>
@@ -1867,6 +1879,38 @@ const DashboardPremium = () => {
               Salvar Alterações
             </Button>
           </DialogActions>
+        </Dialog>
+
+        {/* Dialog do Painel Administrativo */}
+        <Dialog 
+          open={showAdminPanel} 
+          onClose={() => setShowAdminPanel(false)} 
+          maxWidth="xl" 
+          fullWidth
+          PaperProps={{
+            sx: { height: '90vh' }
+          }}
+        >
+          <DialogTitle>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              🔧 Painel Administrativo
+            </Typography>
+            <IconButton
+              aria-label="close"
+              onClick={() => setShowAdminPanel(false)}
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: 8,
+                color: (theme) => theme.palette.grey[500],
+              }}
+            >
+              <Close />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0 }}>
+            <AdminPanel />
+          </DialogContent>
         </Dialog>
 
         {/* Snackbar para notificações do sistema */}
