@@ -447,6 +447,26 @@ const GerenciarSalas = () => {
                 sx={{ mb: 2 }}
                 placeholder="Descreva os recursos da sala..."
               />
+              
+              {/* Campo de Localização */}
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Localização</InputLabel>
+                <Select
+                  value={formData.localizacao_id}
+                  label="Localização"
+                  onChange={(e) => setFormData({ ...formData, localizacao_id: e.target.value })}
+                >
+                  <MenuItem value="">
+                    <em>Nenhuma localização</em>
+                  </MenuItem>
+                  {localizacoes.map((local) => (
+                    <MenuItem key={local.id} value={local.id}>
+                      {local.nome} ({local.tipo})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              
               <FormControlLabel
                 control={
                   <Switch
