@@ -17,11 +17,11 @@ exports.handler = async (event, context) => {
     return { statusCode: 200, headers, body: '' };
   }
 
-  if (event.httpMethod !== 'POST') {
+  if (event.httpMethod !== 'POST' && event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
       headers,
-      body: JSON.stringify({ error: 'Método não permitido' })
+      body: JSON.stringify({ error: 'Método não permitido. Use GET ou POST.' })
     };
   }
 
