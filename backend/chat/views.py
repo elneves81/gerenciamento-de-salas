@@ -199,10 +199,17 @@ class NotificationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Retorna apenas notificações do usuário logado"""
         if self.request.user.is_authenticated:
-            return Notification.objects.filter(
+            print(f"🔍 DEBUG: Usuário autenticado: {self.request.user.id} - {self.request.user.username}")
+            notifications = Notification.objects.filter(
                 recipient=self.request.user
             ).order_by('-created_at')
-        return Notification.objects.none()
+            print(f"🔍 DEBUG: Notificações encontradas: {notifications.count()}")
+            for notif in notifications:
+                print(f"  - {notif.id}: {notif.title}")
+            return notifications
+        else:
+            print("🔍 DEBUG: Usuário não autenticado")
+            return Notification.objects.none()
     
     @action(detail=False, methods=['post'])
     def mark_read(self, request):
