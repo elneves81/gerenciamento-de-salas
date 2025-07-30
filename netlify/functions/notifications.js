@@ -81,6 +81,29 @@ exports.handler = async (event, context) => {
     }
 
     if (event.httpMethod === 'POST') {
+      // Verificar se é endpoint de subscribe
+      if (event.path.includes('/subscribe')) {
+        const { subscription } = JSON.parse(event.body);
+        
+        console.log('📱 Recebendo subscription para notificações push:', subscription);
+        
+        // Por enquanto só logamos - pode implementar salvamento no banco depois
+        // await client.query(`
+        //   INSERT INTO push_subscriptions (subscription_data, created_at)
+        //   VALUES ($1, NOW())
+        // `, [subscription]);
+        
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ 
+            success: true, 
+            message: 'Subscription recebida com sucesso' 
+          })
+        };
+      }
+
+      // POST normal para criar notificação
       const { title, message, type, user_id } = JSON.parse(event.body);
 
       const result = await client.query(`
