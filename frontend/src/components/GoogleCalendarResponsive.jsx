@@ -227,11 +227,18 @@ const GoogleCalendarResponsive = ({ reservas = [], salas = [], onNovaReserva }) 
   const handleNovaReserva = (data = null) => {
     if (data) {
       const dataFormatada = data.toISOString().split('T')[0];
+      // Salvar no localStorage para usar na página de nova reserva
+      localStorage.setItem('preSelectedDate', dataFormatada);
+      
       setNovaReserva(prev => ({
         ...prev,
         data_inicio: dataFormatada,
         data_fim: dataFormatada
       }));
+      
+      // Navegar para página de nova reserva
+      window.location.href = '/nova-reserva';
+      return;
     }
     setDialogReserva(true);
   };

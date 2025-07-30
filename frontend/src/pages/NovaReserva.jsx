@@ -72,6 +72,18 @@ const NovaReserva = () => {
   useEffect(() => {
     loadSalas();
     
+    // Verificar data pré-selecionada do calendário
+    const preSelectedDate = localStorage.getItem('preSelectedDate');
+    if (preSelectedDate) {
+      setFormData(prev => ({ 
+        ...prev, 
+        data_inicio: preSelectedDate,
+        data_fim: preSelectedDate
+      }));
+      // Limpar após usar
+      localStorage.removeItem('preSelectedDate');
+    }
+    
     // Pré-selecionar sala se veio da URL
     const params = new URLSearchParams(location.search);
     const salaId = params.get('sala');

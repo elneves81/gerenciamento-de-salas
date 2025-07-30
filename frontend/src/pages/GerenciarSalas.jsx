@@ -308,8 +308,153 @@ const GerenciarSalas = () => {
           </Grid>
         </Grid>
 
+        {/* Tabs de Navegação */}
+        <Paper elevation={2} sx={{ mb: 3 }}>
+          <Tabs 
+            value={activeTab} 
+            onChange={(e, newValue) => setActiveTab(newValue)}
+            variant={isMobile ? "scrollable" : "fullWidth"}
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{ 
+              borderBottom: 1, 
+              borderColor: 'divider',
+              '& .MuiTab-root': {
+                minWidth: isMobile ? 120 : 'auto',
+                fontSize: isMobile ? '0.8rem' : '0.875rem',
+                padding: isMobile ? '6px 12px' : '12px 16px'
+              }
+            }}
+          >
+            <Tab 
+              label="Salas"
+              icon={<MeetingRoom />} 
+              iconPosition={isMobile ? "top" : "start"}
+            />
+            <Tab 
+              label="Localizações" 
+              icon={<LocationOn />} 
+              iconPosition={isMobile ? "top" : "start"}
+            />
+          </Tabs>
+        </Paper>
+
+        {/* Conteúdo das Tabs */}
+        {activeTab === 0 && (
+          <>
+            {/* Tabela de Salas */}
+            <Paper elevation={2}>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'grey.100' }}>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Nome</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Capacidade</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Descrição</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Ações</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {salas.length > 0 ? (
+                      salas.map((sala) => (
+                        <TableRow 
+                          key={sala.id}
+                          sx={{ 
+                            '&:hover': { bgcolor: 'grey.50' },
+                            opacity: sala.ativa === false ? 0.6 : 1
+                          }}
+                        >
+                          <TableCell>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <MeetingRoom color={sala.ativa !== false ? 'primary' : 'disabled'} />
+                              <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                                {sala.nome}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={`${sala.capacidade || 0} pessoas`}
+                              color="primary"
+                              size="small"
+                              variant="outlined"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary">
+                              {sala.descricao || 'Sem descrição'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Chip 
+                                label={sala.ativa !== false ? 'Ativa' : 'Inativa'}
+                                color={sala.ativa !== false ? 'success' : 'error'}
+                                size="small"
+                              />
+                              <Switch
+                                checked={sala.ativa !== false}
+                                onChange={() => handleToggleAtiva(sala)}
+                                size="small"
+                              />
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Box display="flex" gap={1}>
+                              <Tooltip title="Editar">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleOpenDialog(sala)}
+                                  color="primary"
+                                >
+                                  <Edit />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Excluir">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDelete(sala.id, sala.nome)}
+                                  color="error"
+                                >
+                                  <Delete />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
+                          <MeetingRoom sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                          <Typography variant="h6" color="text.secondary" gutterBottom>
+                            Nenhuma sala cadastrada
+                          </Typography>
+                          <Button 
+                            variant="contained" 
+                            startIcon={<Add />}
+                            onClick={() => handleOpenDialog()}
+                            sx={{ mt: 2 }}
+                          >
+                            Criar Primeira Sala
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          </>
+        )}
+
+        {activeTab === 1 && (
+          <GerenciarLocalizacoes />
+        )}
+
         {/* Tabela de Salas */}
-        <Paper elevation={2}>
+        <Paper elevation={2} sx={{ display: 'none' }}>
           <TableContainer>
             <Table>
               <TableHead>
