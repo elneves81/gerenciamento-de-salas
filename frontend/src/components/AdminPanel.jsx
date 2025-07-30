@@ -49,11 +49,12 @@ import {
   AccountTree as TreeIcon,
   Dashboard as DashboardIcon,
   MeetingRoom as RoomIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Save as SaveIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import GerenciarSalas from './GerenciarSalas';
+import GerenciarSalas from '../pages/GerenciarSalas';
 import UserHierarchy from './UserHierarchy';
 import CreateSuperAdmin from './CreateSuperAdmin';
 
