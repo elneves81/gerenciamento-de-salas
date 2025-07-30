@@ -15,12 +15,15 @@ function generateVAPIDKeys() {
     }
   });
 
-  // Converter para base64url
-  const publicKeyBase64url = publicKey.toString('base64')
+  // Converter chave pública para o formato correto (extrair apenas os 65 bytes da chave)
+  // Remove o header ASN.1 e pega apenas os 65 bytes da chave EC
+  const publicKeyRaw = publicKey.slice(-65);
+  const publicKeyBase64url = publicKeyRaw.toString('base64')
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
 
+  // Converter chave privada para base64url
   const privateKeyBase64url = privateKey.toString('base64')
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
