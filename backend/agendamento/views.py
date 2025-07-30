@@ -76,9 +76,15 @@ class UserProfileView(APIView):
         })
 
 class SalaViewSet(viewsets.ModelViewSet):
-    queryset = Sala.objects.filter(ativa=True)
     serializer_class = SalaSerializer
     permission_classes = [permissions.AllowAny]  # Temporário para debug
+    
+    def get_queryset(self):
+        # Para listagem/gerenciamento, mostrar todas as salas
+        # Para busca de disponibilidade, filtrar apenas ativas
+        if self.action in ['list', 'retrieve', 'create', 'update', 'partial_update', 'destroy']:
+            return Sala.objects.all()
+        return Sala.objects.filter(ativa=True)
     
     @action(detail=True, methods=['get'])
     def agenda(self, request, pk=None):
