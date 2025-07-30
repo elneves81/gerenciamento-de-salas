@@ -1,12 +1,9 @@
-// Service Worker para Push Notifications
-const CACHE_NAME = 'salafacil-v1';
+// Service Worker para Push Notifications - Compatível com Vite
+const CACHE_NAME = 'salafacil-v2';
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json',
-  '/logo192.png',
-  '/logo512.png'
+  '/manifest.json'
+  // Assets dinâmicos do Vite serão cacheados conforme solicitados
 ];
 
 // Instalação do Service Worker
@@ -38,6 +35,12 @@ self.addEventListener('activate', (event) => {
 
 // Interceptar requisições de rede
 self.addEventListener('fetch', (event) => {
+  // Não cachear assets dinâmicos do Vite (com hash)
+  if (event.request.url.includes('/assets/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -45,7 +48,24 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        return fetch(event.request);
+        
+        // Buscar na rede e cachear se for recurso estático
+        return fetch(event.request).then((response) => {
+          // Não cachear se não for sucesso
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+
+          // Clonar resposta pois ela é um stream
+          const responseToCache = response.clone();
+
+          caches.open(CACHE_NAME)
+            .then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+
+          return response;
+        });
       }
     )
   );
