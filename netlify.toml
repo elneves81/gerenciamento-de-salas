@@ -7,9 +7,9 @@
 [build.environment]
   NODE_VERSION = "18"
 
-# Functions usando bundler mais estável
+# Functions dentro do frontend
 [functions]
-  directory = "../netlify/functions"
+  directory = "netlify/functions"
   node_bundler = "zisi"
 
 # Redirects com prioridade correta  
