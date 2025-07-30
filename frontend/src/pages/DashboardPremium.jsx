@@ -87,6 +87,7 @@ import { format, isToday, isTomorrow, parseISO, addDays, startOfWeek, endOfWeek 
 import { ptBR } from 'date-fns/locale';
 import api from '../services/api';
 import ChatSystem from '../components/ChatSystem';
+import SalaFacilLogo from '../components/SalaFacilLogo';
 import GraficosInterativosSimples from '../components/GraficosInterativosSimples';
 import RelatoriosAvancados from '../components/RelatoriosAvancados';
 import GoogleCalendarResponsive from '../components/GoogleCalendarResponsive';
@@ -492,8 +493,15 @@ const DashboardPremium = () => {
         <Paper elevation={3} sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
             <Box display="flex" alignItems="center" gap={3}>
-              <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 64, height: 64 }}>
-                <DashboardIcon sx={{ fontSize: 32 }} />
+              <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 80, height: 60, borderRadius: 2 }}>
+                <SalaFacilLogo 
+                  size="small" 
+                  sx={{ 
+                    filter: 'brightness(0) invert(1)',
+                    width: 70,
+                    height: 50
+                  }} 
+                />
               </Avatar>
               <Box>
                 <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import SalaFacilLogo from '../components/SalaFacilLogo';
 import { Building2, Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Users, Calendar } from 'lucide-react';
 
 const Login = () => {
@@ -49,11 +50,17 @@ const Login = () => {
         </div>
         <div className="relative z-10 flex flex-col justify-center px-12 py-16 text-white">
           <div className="mb-8">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-3 bg-white bg-opacity-20 rounded-xl backdrop-blur-sm">
-                <Building2 className="h-8 w-8 text-white" />
+            <div className="flex items-center space-x-4 mb-6">
+              <div className="p-2 bg-white bg-opacity-20 rounded-xl backdrop-blur-sm">
+                <SalaFacilLogo 
+                  size="small" 
+                  sx={{ 
+                    filter: 'brightness(0) invert(1)',
+                    width: 120,
+                    height: 48
+                  }} 
+                />
               </div>
-              <h1 className="text-2xl font-bold">Sistema de Agendamento</h1>
             </div>
             <h2 className="text-4xl font-bold leading-tight mb-6">
               Gerencie suas salas de reunião com facilidade

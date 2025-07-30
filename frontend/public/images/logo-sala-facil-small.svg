@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
+  <!-- Logo Icon -->
+  <g transform="translate(10, 10)">
+    <!-- Outer rounded rectangle -->
+    <rect x="0" y="0" width="50" height="50" rx="8" ry="8" fill="none" stroke="#4a4a7a" stroke-width="3"/>
+    
+    <!-- Inner rectangle (tablet/screen) -->
+    <rect x="8" y="5" width="30" height="38" rx="2" ry="2" fill="#8b7db8"/>
+    
+    <!-- Checkmark -->
+    <path d="M 42 28 L 48 34 L 58 22" fill="none" stroke="#4a9eff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Small dot on screen -->
+    <circle cx="23" cy="37" r="1.5" fill="#4a4a7a"/>
+  </g>
+  
+  <!-- Text -->
+  <g transform="translate(75, 25)">
+    <!-- SalaFácil -->
+    <text x="0" y="20" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#4a4a7a">SalaFácil</text>
+    
+    <!-- Gestão de Salas -->
+    <text x="0" y="38" font-family="Arial, sans-serif" font-size="11" fill="#8b7db8">Gestão de Salas</text>
+  </g>
+</svg>

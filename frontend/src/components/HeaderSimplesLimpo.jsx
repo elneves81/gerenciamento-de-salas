@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationCenter } from './NotificationSystem';
+import SalaFacilLogo from './SalaFacilLogo';
 import { 
   Building2,
   Settings,
@@ -43,28 +44,30 @@ const HeaderSimplesLimpo = ({ title = "Sistema de Reservas" }) => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '12px'
+          gap: '16px'
         }}>
           <button 
             onClick={() => navigate('/dashboard')}
             style={{
-              background: 'rgba(255, 255, 255, 0.15)',
+              background: 'transparent',
               border: 'none',
-              borderRadius: '12px',
-              padding: '10px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'all 0.2s ease',
-              '&:hover': {
-                background: 'rgba(255, 255, 255, 0.25)'
-              }
+              padding: '4px'
             }}
-            onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.25)'}
-            onMouseLeave={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.15)'}
           >
-            <Building2 size={24} style={{ color: 'white' }} />
+            <SalaFacilLogo 
+              size="small" 
+              sx={{ 
+                filter: 'brightness(0) invert(1)',
+                '&:hover': {
+                  transform: 'scale(1.05)'
+                }
+              }} 
+            />
           </button>
           
           <div>
