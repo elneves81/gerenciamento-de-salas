@@ -1,4 +1,4 @@
-# Netlify Configuration - SalaFácil
+# Netlify Configuration - SalaFácil com Chat e Notificações
 [build]
   base = "frontend"
   command = "npm install --prefix .. && rm -f package-lock.json && npm install && npm run build"
@@ -6,6 +6,9 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  # Variáveis para o sistema de chat
+  REACT_APP_API_URL = "https://your-backend-url.herokuapp.com"
+  REACT_APP_VAPID_PUBLIC_KEY = "your-vapid-public-key-here"
 
 # Netlify Functions (Backend)
 [functions]
@@ -15,6 +18,10 @@
 [context.development.environment]
   DATABASE_URL = "sua-connection-string-neon-aqui"
   JWT_SECRET = "sua-chave-jwt-super-secreta-aqui"
+  VAPID_PRIVATE_KEY = "sua-vapid-private-key"
+  VAPID_PUBLIC_KEY = "sua-vapid-public-key"
+  EMAIL_HOST_USER = "seu-email@gmail.com"
+  EMAIL_HOST_PASSWORD = "sua-senha-de-app"
 
 # Variáveis de ambiente para produção (configurar no Netlify Dashboard)
 # [context.production.environment]
@@ -32,7 +39,7 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
-# Headers for security
+# Headers for security and PWA support
 [[headers]]
   for = "/*"
   [headers.values]
@@ -40,6 +47,19 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Service Worker headers for PWA
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+    Service-Worker-Allowed = "/"
+
+# Manifest file for PWA
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type = "application/manifest+json"
 
 # Cache static assets
 [[headers]]
