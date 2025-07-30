@@ -23,20 +23,39 @@ exports.handler = async (event, context) => {
   try {
     if (event.httpMethod === 'GET') {
       // Buscar notificações do usuário
-      const userId = event.queryStringParameters?.user_id;
+      let userId = event.queryStringParameters?.user_id;
+      
+      // Se não tem user_id nos parâmetros, tentar extrair do token JWT
+      if (!userId) {
+        const authHeader = event.headers?.authorization;
+        console.log('🔍 Authorization header:', authHeader);
+        
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          try {
+            const token = authHeader.substring(7);
+            // Decodificar JWT payload (sem verificar assinatura para simplicidade)
+            const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+            userId = payload.user_id;
+            console.log('✅ user_id extraído do token:', userId);
+          } catch (error) {
+            console.log('❌ Erro ao decodificar token:', error.message);
+          }
+        }
+      }
       
       console.log('🔍 API Notifications - Parâmetros recebidos:', event.queryStringParameters);
-      console.log('🔍 API Notifications - user_id:', userId);
+      console.log('🔍 API Notifications - user_id final:', userId);
       
       if (!userId) {
-        console.log('❌ user_id não fornecido');
+        console.log('❌ user_id não encontrado nem nos parâmetros nem no token');
         return {
           statusCode: 400,
           headers,
           body: JSON.stringify({ 
             error: 'user_id é obrigatório',
             received_params: event.queryStringParameters || {},
-            message: 'Envie: ?user_id=123'
+            auth_header: event.headers?.authorization ? 'Presente' : 'Ausente',
+            message: 'Envie: ?user_id=123 ou Authorization: Bearer token'
           })
         };
       }

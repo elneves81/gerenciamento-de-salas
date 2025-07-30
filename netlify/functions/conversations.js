@@ -23,12 +23,27 @@ exports.handler = async (event, context) => {
   try {
     if (event.httpMethod === 'GET') {
       // Buscar conversas do usuário
-      const userId = event.queryStringParameters?.user_id;
+      let userId = event.queryStringParameters?.user_id;
+      
+      // Se não tem user_id nos parâmetros, tentar extrair do token JWT
+      if (!userId) {
+        const authHeader = event.headers?.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          try {
+            const token = authHeader.substring(7);
+            const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+            userId = payload.user_id;
+          } catch (error) {
+            console.log('Erro ao decodificar token:', error.message);
+          }
+        }
+      }
+      
       if (!userId) {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: 'user_id é obrigatório' })
+          body: JSON.stringify({ error: 'user_id é obrigatório ou token inválido' })
         };
       }
 
