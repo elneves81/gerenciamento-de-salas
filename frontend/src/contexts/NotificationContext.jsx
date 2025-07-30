@@ -173,11 +173,18 @@ export const NotificationProvider = ({ children }) => {
       
       setNotifications(notifs);
       
-      const unread = notifs.filter(n => !n.is_read).length;
+      // Ajustar campo read -> is_read para compatibilidade
+      const normalizedNotifs = notifs.map(n => ({
+        ...n,
+        is_read: n.read // API retorna 'read', frontend espera 'is_read'
+      }));
+      setNotifications(normalizedNotifs);
+      
+      const unread = normalizedNotifs.filter(n => !n.is_read).length;
       setUnreadCount(unread);
       
       // Mostrar toast para notificações novas
-      const newNotifs = notifs.filter(n => !n.is_read && !n.was_shown);
+      const newNotifs = normalizedNotifs.filter(n => !n.is_read && !n.was_shown);
       if (newNotifs.length > 0) {
         showNotificationToast(newNotifs[0]);
         // Marcar como mostrada
@@ -206,9 +213,13 @@ export const NotificationProvider = ({ children }) => {
 
   const markAsRead = async (notificationIds) => {
     try {
-      await api.post('/notifications/mark_read/', {
-        notification_ids: Array.isArray(notificationIds) ? notificationIds : [notificationIds]
-      });
+      const ids = Array.isArray(notificationIds) ? notificationIds : [notificationIds];
+      
+      // Para cada notificação, fazer um PUT individual
+      for (const id of ids) {
+        await api.put(`/notifications/${id}/`);
+      }
+      
       await loadNotifications();
     } catch (error) {
       console.error('Erro ao marcar como lida:', error);
@@ -217,9 +228,8 @@ export const NotificationProvider = ({ children }) => {
 
   const markAsShown = async (notificationIds) => {
     try {
-      await api.post('/notifications/mark_shown/', {
-        notification_ids: notificationIds
-      });
+      // Por enquanto, não temos endpoint para mark_shown, então vamos apenas logar
+      console.log('🔍 Notificações marcadas como mostradas:', notificationIds);
     } catch (error) {
       console.error('Erro ao marcar como mostrada:', error);
     }
@@ -227,7 +237,11 @@ export const NotificationProvider = ({ children }) => {
 
   const markAllAsRead = async () => {
     try {
-      await api.post('/notifications/mark_all_read/');
+      // Marcar todas as notificações não lidas como lidas
+      const unreadNotifications = notifications.filter(n => !n.is_read);
+      for (const notification of unreadNotifications) {
+        await api.put(`/notifications/${notification.id}/`);
+      }
       await loadNotifications();
     } catch (error) {
       console.error('Erro ao marcar todas como lidas:', error);
@@ -236,7 +250,10 @@ export const NotificationProvider = ({ children }) => {
 
   const deleteNotification = async (notificationId) => {
     try {
-      await api.delete(`/notifications/${notificationId}/`);
+      // Por enquanto, API não tem DELETE implementado
+      // Vamos marcar como lida ao invés de deletar
+      console.log('🔍 Marcando notificação como lida ao invés de deletar:', notificationId);
+      await api.put(`/notifications/${notificationId}/`);
       await loadNotifications();
     } catch (error) {
       console.error('Erro ao deletar notificação:', error);
