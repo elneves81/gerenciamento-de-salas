@@ -130,7 +130,21 @@ const AdminPanel = () => {
 
   const loadData = async () => {
     try {
-      // Por enquanto, usar dados mock até as APIs estarem completas
+      // Carregar dados reais das APIs Django
+      const [usersResponse, departmentsResponse, statsResponse] = await Promise.all([
+        api.get('/admin/users/'),
+        api.get('/admin/departments/'),
+        api.get('/admin/stats/')
+      ]);
+
+      setUsers(usersResponse.data.results || usersResponse.data);
+      setDepartments(departmentsResponse.data.results || departmentsResponse.data);
+      setStats(statsResponse.data);
+
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      
+      // Fallback para dados mock em caso de erro
       const mockUsers = [
         {
           id: 1,
@@ -139,8 +153,8 @@ const AdminPanel = () => {
           telefone: '(45) 99999-9999',
           role: 'admin',
           status: 'active',
-          department_id: 1,
-          manager_id: null
+          department: 1,
+          manager: null
         },
         {
           id: 2,
@@ -149,8 +163,8 @@ const AdminPanel = () => {
           telefone: '(45) 88888-8888',
           role: 'user',
           status: 'active',
-          department_id: 1,
-          manager_id: 1
+          department: 1,
+          manager: 1
         }
       ];
 
@@ -159,112 +173,166 @@ const AdminPanel = () => {
           id: 1,
           name: 'Administração',
           description: 'Departamento Administrativo',
-          parent_id: null
+          parent: null
         },
         {
           id: 2,
           name: 'TI',
           description: 'Tecnologia da Informação',
-          parent_id: 1
+          parent: 1
         }
       ];
 
       setUsers(mockUsers);
       setDepartments(mockDepartments);
 
-      // Calcular estatísticas
+      // Calcular estatísticas dos dados mock
       const totalUsers = mockUsers.length;
       const activeUsers = mockUsers.filter(u => u.status === 'active').length;
       const blockedUsers = mockUsers.filter(u => u.status === 'blocked').length;
       
       setStats({
-        totalUsers,
-        activeUsers,
-        blockedUsers,
-        totalDepartments: mockDepartments.length
-      });
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      // Fallback para dados vazios
-      setUsers([]);
-      setDepartments([]);
-      setStats({
-        totalUsers: 0,
-        activeUsers: 0,
-        blockedUsers: 0,
-        totalDepartments: 0
+        total_users: totalUsers,
+        active_users: activeUsers,
+        blocked_users: blockedUsers,
+        total_departments: mockDepartments.length
       });
     }
   };
 
   const handleCreateUser = async () => {
     try {
-      // Simulação de criação - em produção usaria: await api.post('/admin/users', userForm);
-      alert(`Usuário "${userForm.nome}" seria criado com email "${userForm.email}"`);
+      const userData = {
+        nome: userForm.nome,
+        email: userForm.email,
+        telefone: userForm.telefone,
+        role: userForm.role,
+        department: userForm.department_id || null,
+        manager: userForm.manager_id || null
+      };
+
+      await api.post('/admin/users/', userData);
+      
       setOpenUserDialog(false);
       setUserForm({ nome: '', email: '', telefone: '', role: 'user', department_id: '', manager_id: '' });
-      // loadData(); // Desabilitado temporariamente
+      
+      // Recarregar dados
+      loadData();
+      
+      alert(`Usuário "${userForm.nome}" criado com sucesso!`);
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
+      const errorMessage = error.response?.data?.error || 'Erro ao criar usuário';
+      alert(`Erro: ${errorMessage}`);
     }
   };
 
   const handleUpdateUser = async () => {
     try {
-      // Simulação de atualização - em produção usaria: await api.put(`/admin/users/${selectedUser.id}`, userForm);
-      alert(`Usuário "${userForm.nome}" seria atualizado`);
+      const userData = {
+        nome: userForm.nome,
+        email: userForm.email,
+        telefone: userForm.telefone,
+        role: userForm.role,
+        department: userForm.department_id || null,
+        manager: userForm.manager_id || null
+      };
+
+      await api.put(`/admin/users/${selectedUser.id}/`, userData);
+      
       setOpenUserDialog(false);
       setSelectedUser(null);
       setUserForm({ nome: '', email: '', telefone: '', role: 'user', department_id: '', manager_id: '' });
-      // loadData(); // Desabilitado temporariamente
+      
+      // Recarregar dados
+      loadData();
+      
+      alert(`Usuário "${userForm.nome}" atualizado com sucesso!`);
     } catch (error) {
       console.error('Erro ao atualizar usuário:', error);
+      const errorMessage = error.response?.data?.error || 'Erro ao atualizar usuário';
+      alert(`Erro: ${errorMessage}`);
     }
   };
 
   const handleBlockUser = async (userId, currentStatus) => {
     try {
-      // Simulação de bloqueio - em produção usaria: await api.patch(`/admin/users/${userId}/status`, { status: newStatus });
+      await api.patch(`/admin/users/${userId}/block_user/`);
+      
       const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
-      alert(`Usuário seria ${newStatus === 'blocked' ? 'bloqueado' : 'desbloqueado'}`);
-      // loadData(); // Desabilitado temporariamente
+      const action = newStatus === 'blocked' ? 'bloqueado' : 'desbloqueado';
+      
+      // Recarregar dados
+      loadData();
+      
+      alert(`Usuário ${action} com sucesso!`);
     } catch (error) {
       console.error('Erro ao alterar status:', error);
+      const errorMessage = error.response?.data?.error || 'Erro ao alterar status do usuário';
+      alert(`Erro: ${errorMessage}`);
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('Tem certeza que deseja deletar este usuário?')) {
+    if (window.confirm('Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita.')) {
       try {
-        // Simulação de exclusão - em produção usaria: await api.delete(`/admin/users/${userId}`);
-        alert('Usuário seria deletado');
-        // loadData(); // Desabilitado temporariamente
+        await api.delete(`/admin/users/${userId}/`);
+        
+        // Recarregar dados
+        loadData();
+        
+        alert('Usuário deletado com sucesso!');
       } catch (error) {
         console.error('Erro ao deletar usuário:', error);
+        const errorMessage = error.response?.data?.error || 'Erro ao deletar usuário';
+        alert(`Erro: ${errorMessage}`);
       }
     }
   };
 
   const handleSendNotification = async () => {
     try {
-      // Simulação de notificação - em produção usaria: await api.post('/admin/notifications', notificationForm);
-      alert(`Notificação "${notificationForm.title}" seria enviada`);
+      const notificationData = {
+        title: notificationForm.title,
+        message: notificationForm.message,
+        recipient: notificationForm.recipient_id || null,
+        type: notificationForm.type
+      };
+
+      await api.post('/admin/notifications/', notificationData);
+      
       setOpenNotificationDialog(false);
       setNotificationForm({ title: '', message: '', recipient_id: '', type: 'admin_message' });
+      
+      alert(`Notificação "${notificationForm.title}" enviada com sucesso!`);
     } catch (error) {
       console.error('Erro ao enviar notificação:', error);
+      const errorMessage = error.response?.data?.error || 'Erro ao enviar notificação';
+      alert(`Erro: ${errorMessage}`);
     }
   };
 
   const handleCreateDepartment = async () => {
     try {
-      // Simulação de criação de departamento - em produção usaria: await api.post('/admin/departments', departmentForm);
-      alert(`Departamento "${departmentForm.name}" seria criado`);
+      const departmentData = {
+        name: departmentForm.name,
+        description: departmentForm.description,
+        parent: departmentForm.parent_id || null
+      };
+
+      await api.post('/admin/departments/', departmentData);
+      
       setOpenDepartmentDialog(false);
       setDepartmentForm({ name: '', description: '', parent_id: '' });
-      // loadData(); // Desabilitado temporariamente
+      
+      // Recarregar dados
+      loadData();
+      
+      alert(`Departamento "${departmentForm.name}" criado com sucesso!`);
     } catch (error) {
       console.error('Erro ao criar departamento:', error);
+      const errorMessage = error.response?.data?.error || 'Erro ao criar departamento';
+      alert(`Erro: ${errorMessage}`);
     }
   };
 
@@ -304,7 +372,7 @@ const AdminPanel = () => {
                   <PeopleIcon />
                 </Avatar>
                 <Box>
-                  <Typography variant="h4">{stats.totalUsers}</Typography>
+                  <Typography variant="h4">{stats.total_users || 0}</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Total de Usuários
                   </Typography>
@@ -324,7 +392,7 @@ const AdminPanel = () => {
                   </Badge>
                 </Avatar>
                 <Box>
-                  <Typography variant="h4">{stats.activeUsers}</Typography>
+                  <Typography variant="h4">{stats.active_users || 0}</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Usuários Ativos
                   </Typography>
@@ -342,7 +410,7 @@ const AdminPanel = () => {
                   <BlockIcon />
                 </Avatar>
                 <Box>
-                  <Typography variant="h4">{stats.blockedUsers}</Typography>
+                  <Typography variant="h4">{stats.blocked_users || 0}</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Usuários Bloqueados
                   </Typography>
@@ -360,7 +428,7 @@ const AdminPanel = () => {
                   <BusinessIcon />
                 </Avatar>
                 <Box>
-                  <Typography variant="h4">{stats.totalDepartments}</Typography>
+                  <Typography variant="h4">{stats.total_departments || 0}</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Departamentos
                   </Typography>
@@ -485,7 +553,7 @@ const AdminPanel = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      {departments.find(d => d.id === userItem.department_id)?.name || '-'}
+                      {departments.find(d => d.id === userItem.department)?.name || '-'}
                     </TableCell>
                     <TableCell>
                       <Chip
