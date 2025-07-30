@@ -1,4 +1,4 @@
-# Netlify Configuration - SalaFácil
+# Netlify Configuration - SalaFácil (Backup ZIP bundler)
 [build]
   base = "frontend"
   command = "npm ci && npm run build"
@@ -7,11 +7,10 @@
 [build.environment]
   NODE_VERSION = "18"
 
-# Netlify Functions
+# Netlify Functions - usando zip bundler (mais estável)
 [functions]
   directory = "../netlify/functions"
-  node_bundler = "esbuild"
-  external_node_modules = ["pg", "jsonwebtoken", "bcryptjs"]
+  node_bundler = "zisi"
 
 # SPA Redirect - DEVE SER O ÚLTIMO
 [[redirects]]
