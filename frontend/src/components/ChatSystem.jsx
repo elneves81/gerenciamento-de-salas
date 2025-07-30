@@ -205,7 +205,7 @@ const ChatSystem = ({ onClose }) => {
     return otherParticipant?.is_staff ? <AdminPanelSettings /> : <Person />;
   };
 
-  const filteredConversations = conversations.filter(conv => {
+  const filteredConversations = (Array.isArray(conversations) ? conversations : []).filter(conv => {
     const name = getConversationName(conv).toLowerCase();
     const matchesSearch = name.includes(searchTerm.toLowerCase());
     
@@ -218,7 +218,7 @@ const ChatSystem = ({ onClose }) => {
     return matchesSearch;
   });
 
-  const filteredUsers = users.filter(u => 
+  const filteredUsers = (Array.isArray(users) ? users : []).filter(u => 
     u.id !== user.id && 
     `${u.first_name} ${u.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -392,14 +392,14 @@ const ChatSystem = ({ onClose }) => {
           <Box display="flex" justifyContent="center" p={3}>
             <Typography>Carregando mensagens...</Typography>
           </Box>
-        ) : messages.length === 0 ? (
+        ) : (Array.isArray(messages) ? messages : []).length === 0 ? (
           <Box display="flex" justifyContent="center" p={3}>
             <Typography color="text.secondary">
               Nenhuma mensagem ainda. Seja o primeiro a enviar uma mensagem!
             </Typography>
           </Box>
         ) : (
-          messages.map((message, index) => {
+          (Array.isArray(messages) ? messages : []).map((message, index) => {
             const isOwn = message.sender?.id === user.id;
             const showAvatar = index === 0 || messages[index - 1]?.sender?.id !== message.sender?.id;
             

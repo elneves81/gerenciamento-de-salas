@@ -88,7 +88,7 @@ const CalendarioEstilizado = ({ reservas = [], salas = [], onNovaReserva }) => {
     // Dias do mês atual
     for (let dia = 1; dia <= diasNoMes; dia++) {
       const dataAtual = new Date(ano, mes, dia);
-      const reservasDoDia = reservas.filter(reserva => {
+      const reservasDoDia = (Array.isArray(reservas) ? reservas : []).filter(reserva => {
         const dataReserva = new Date(reserva.data_inicio);
         return dataReserva.toDateString() === dataAtual.toDateString();
       });
@@ -134,7 +134,7 @@ const CalendarioEstilizado = ({ reservas = [], salas = [], onNovaReserva }) => {
       return { color: '#e8f5e8', textColor: '#2e7d32', text: 'Salas Livres' };
     } else {
       // Com reuniões
-      const totalSalas = salas.length;
+      const totalSalas = (Array.isArray(salas) ? salas : []).length;
       const salasOcupadas = diaInfo.reservas.length;
       
       if (salasOcupadas >= totalSalas) {
@@ -420,7 +420,7 @@ const CalendarioEstilizado = ({ reservas = [], salas = [], onNovaReserva }) => {
                 label="Sala"
                 onChange={(e) => setNovaReserva({...novaReserva, sala: e.target.value})}
               >
-                {salas.map(sala => (
+                {(Array.isArray(salas) ? salas : []).map(sala => (
                   <MenuItem key={sala.id} value={sala.id}>
                     {sala.nome}
                   </MenuItem>

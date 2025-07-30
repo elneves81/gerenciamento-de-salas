@@ -143,7 +143,19 @@ export const NotificationProvider = ({ children }) => {
       });
       
       console.log('✅ Resposta da API notificações:', response.data);
-      const notifs = response.data || [];
+      
+      // Garantir que sempre temos um array
+      let notifs = [];
+      if (Array.isArray(response.data)) {
+        notifs = response.data;
+      } else if (response.data?.results && Array.isArray(response.data.results)) {
+        // Django REST pagination
+        notifs = response.data.results;
+      } else if (response.data) {
+        console.warn('Resposta da API não é um array:', typeof response.data, response.data);
+        notifs = [];
+      }
+      
       setNotifications(notifs);
       
       const unread = notifs.filter(n => !n.is_read).length;
