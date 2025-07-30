@@ -1,75 +1,29 @@
-// Service Worker para Push Notifications - Compatível com Vite
-const CACHE_NAME = 'salafacil-v2';
-const urlsToCache = [
-  '/',
-  '/manifest.json'
-  // Assets dinâmicos do Vite serão cacheados conforme solicitados
-];
+// Service Worker simples para Push Notifications - Sem cache para evitar conflitos com Vite
+const CACHE_NAME = 'salafacil-v3';
 
 // Instalação do Service Worker
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Cache aberto');
-        return cache.addAll(urlsToCache);
-      })
-  );
+  console.log('Service Worker instalado');
+  self.skipWaiting(); // Força ativação imediata
 });
 
 // Ativação do Service Worker
 self.addEventListener('activate', (event) => {
+  console.log('Service Worker ativado');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Removendo cache antigo:', cacheName);
-            return caches.delete(cacheName);
-          }
+          console.log('Removendo cache antigo:', cacheName);
+          return caches.delete(cacheName);
         })
       );
     })
   );
+  self.clients.claim(); // Toma controle imediato
 });
 
-// Interceptar requisições de rede
-self.addEventListener('fetch', (event) => {
-  // Não cachear assets dinâmicos do Vite (com hash)
-  if (event.request.url.includes('/assets/')) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache hit - retorna resposta
-        if (response) {
-          return response;
-        }
-        
-        // Buscar na rede e cachear se for recurso estático
-        return fetch(event.request).then((response) => {
-          // Não cachear se não for sucesso
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          // Clonar resposta pois ela é um stream
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-
-          return response;
-        });
-      }
-    )
-  );
-});
+// NÃO interceptar fetch - deixar o Vite gerenciar os assets
 
 // Handler para Push Notifications
 self.addEventListener('push', (event) => {
