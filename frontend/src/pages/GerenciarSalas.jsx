@@ -70,7 +70,7 @@ const GerenciarSalas = () => {
     nome: '',
     capacidade: '',
     descricao: '',
-    localizacao_id: '',
+    localizacao: '',
     ativa: true
   });
 
@@ -112,7 +112,7 @@ const GerenciarSalas = () => {
         nome: sala.nome || '',
         capacidade: sala.capacidade || '',
         descricao: sala.descricao || '',
-        localizacao_id: sala.localizacao_id || '',
+        localizacao: sala.localizacao || '',
         ativa: sala.ativa !== false
       });
     } else {
@@ -121,7 +121,7 @@ const GerenciarSalas = () => {
         nome: '',
         capacidade: '',
         descricao: '',
-        localizacao_id: '',
+            localizacao: sala.localizacao || '',
         ativa: true
       });
     }
@@ -130,7 +130,7 @@ const GerenciarSalas = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setEditingSala(null);
+            localizacao: '',
     setFormData({
       nome: '',
       capacidade: '',
@@ -151,7 +151,7 @@ const GerenciarSalas = () => {
         nome: formData.nome.trim(),
         capacidade: parseInt(formData.capacidade) || 0,
         descricao: formData.descricao.trim(),
-        localizacao_id: formData.localizacao_id || null,
+          localizacao: formData.localizacao || null,
         ativa: formData.ativa
       };
 
@@ -599,9 +599,9 @@ const GerenciarSalas = () => {
               <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel>Localização</InputLabel>
                 <Select
-                  value={formData.localizacao_id}
+                  value={formData.localizacao}
                   label="Localização"
-                  onChange={(e) => setFormData({ ...formData, localizacao_id: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, localizacao: e.target.value })}
                 >
                   <MenuItem value="">
                     <em>Nenhuma localização</em>
