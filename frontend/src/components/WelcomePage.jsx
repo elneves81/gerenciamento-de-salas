@@ -10,7 +10,8 @@ import {
   Slide,
   Avatar,
   Chip,
-  Grid
+  Grid,
+  Alert
 } from '@mui/material';
 import {
   Celebration as CelebrationIcon,
@@ -18,16 +19,53 @@ import {
   AdminPanelSettings as AdminIcon,
   CalendarMonth as CalendarIcon,
   MeetingRoom as RoomIcon,
-  Notifications as NotificationIcon
+  Notifications as NotificationIcon,
+  Security as SecurityIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import CreateSuperAdmin from './CreateSuperAdmin';
 
 const WelcomePage = ({ onContinue }) => {
   const { user } = useAuth();
   const [showContent, setShowContent] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [adminStatus, setAdminStatus] = useState(null);
+  const [showCreateSuperAdmin, setShowCreateSuperAdmin] = useState(false);
 
   const isAdmin = user?.role === 'admin';
+
+  useEffect(() => {
+    setShowContent(true);
+    checkAdminStatus();
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % 3);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      const response = await fetch('/.netlify/functions/check-admin-status', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAdminStatus(data);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar status do admin:', error);
+    }
+  };
+
+  const handleSuperAdminSuccess = () => {
+    setShowCreateSuperAdmin(false);
+    checkAdminStatus(); // Recarregar status
+    // Opcional: mostrar mensagem de sucesso ou redirecionar para login
+  };
 
   useEffect(() => {
     setShowContent(true);
@@ -132,6 +170,39 @@ const WelcomePage = ({ onContinue }) => {
                 />
               </Box>
             </Slide>
+
+            {/* Alerta para criar Super Admin se necessário */}
+            {adminStatus?.needsSetup && (
+              <Slide direction="down" in={showContent} timeout={600}>
+                <Alert 
+                  severity="warning" 
+                  sx={{ 
+                    mb: 4, 
+                    bgcolor: 'rgba(255,193,7,0.1)', 
+                    border: '1px solid rgba(255,193,7,0.3)',
+                    '& .MuiAlert-message': { color: 'white' }
+                  }}
+                  action={
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<SecurityIcon />}
+                      onClick={() => setShowCreateSuperAdmin(true)}
+                      sx={{
+                        bgcolor: '#ff9800',
+                        '&:hover': { bgcolor: '#f57c00' }
+                      }}
+                    >
+                      Configurar Agora
+                    </Button>
+                  }
+                >
+                  <Typography variant="body2" fontWeight="bold">
+                    ⚠️ Sistema não configurado! É necessário criar um Super Administrador para gerenciar o sistema.
+                  </Typography>
+                </Alert>
+              </Slide>
+            )}
 
             {/* Frase motivacional rotativa */}
             <Box mb={6} sx={{ height: 150 }}>
@@ -243,6 +314,13 @@ const WelcomePage = ({ onContinue }) => {
           </Box>
         </Fade>
       </Container>
+
+      {/* Dialog para criar Super Admin */}
+      <CreateSuperAdmin
+        open={showCreateSuperAdmin}
+        onClose={() => setShowCreateSuperAdmin(false)}
+        onSuccess={handleSuperAdminSuccess}
+      />
 
       <style jsx>{`
         @keyframes float {

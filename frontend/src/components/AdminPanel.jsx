@@ -55,6 +55,7 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import GerenciarSalas from './GerenciarSalas';
 import UserHierarchy from './UserHierarchy';
+import CreateSuperAdmin from './CreateSuperAdmin';
 
 // Componente de Tab Panel
 function TabPanel({ children, value, index, ...other }) {
@@ -96,6 +97,7 @@ const AdminPanel = () => {
   const [openUserDialog, setOpenUserDialog] = useState(false);
   const [openNotificationDialog, setOpenNotificationDialog] = useState(false);
   const [openDepartmentDialog, setOpenDepartmentDialog] = useState(false);
+  const [openSuperAdminDialog, setOpenSuperAdminDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
   // Forms state
@@ -376,6 +378,15 @@ const AdminPanel = () => {
               onClick={() => setOpenDepartmentDialog(true)}
             >
               Criar Departamento
+            </Button>
+            
+            <Button
+              variant="outlined"
+              startIcon={<AdminIcon />}
+              onClick={() => setOpenSuperAdminDialog(true)}
+              color="warning"
+            >
+              Criar Super Admin
             </Button>
           </Box>
 
@@ -679,6 +690,16 @@ const AdminPanel = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Dialog para criar Super Admin */}
+      <CreateSuperAdmin
+        open={openSuperAdminDialog}
+        onClose={() => setOpenSuperAdminDialog(false)}
+        onSuccess={() => {
+          setOpenSuperAdminDialog(false);
+          loadData(); // Recarregar dados após criação
+        }}
+      />
     </Container>
   );
 };
