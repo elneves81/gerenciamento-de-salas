@@ -1,0 +1,24 @@
+# Netlify Configuration - Ultra Simples
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Functions usando bundler mais estável
+[functions]
+  directory = "../netlify/functions"
+  node_bundler = "zisi"
+
+# Apenas o essencial
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
