@@ -9,7 +9,7 @@
 
 # Functions usando bundler mais estável
 [functions]
-  directory = "netlify/functions"
+  directory = "../netlify/functions"
   node_bundler = "zisi"
 
 # Redirects com prioridade correta  
