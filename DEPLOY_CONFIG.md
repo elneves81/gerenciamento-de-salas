@@ -15,7 +15,7 @@ REACT_APP_API_URL=https://your-app.up.railway.app
 
 # === PUSH NOTIFICATIONS ===
 # Gere suas chaves em: https://web-push-codelab.glitch.me/
-REACT_APP_VAPID_PUBLIC_KEY=sua-chave-publica-vapid-aqui
+REACT_APP_VAPID_PUBLIC_KEY=MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE-ar3dONfWAX0ZLoCbt_7Fr2OaErxCae63QcAlz8qfL7piH9MzCODaHVZBZcFPVbczUxOMAnkHD3w34qoI3nYLg
 
 # === OUTRAS CONFIGURAÇÕES ===
 NODE_VERSION=18
@@ -34,8 +34,8 @@ REACT_APP_API_URL=https://gerenciamentosalas.netlify.app/.netlify/functions
 REACT_APP_FRONTEND_URL=https://gerenciamentosalas.netlify.app
 
 # === PUSH NOTIFICATIONS ===
-VAPID_PRIVATE_KEY=sua-chave-privada-vapid-aqui  
-VAPID_PUBLIC_KEY=sua-chave-publica-vapid-aqui
+VAPID_PRIVATE_KEY=MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgNlEds30iWuGglfoWBque3kVEmgIkbTvhiYDCauTid6uhRANCAAT5qvd0419YBfRkugJu3_sWvY5oSvEJp7rdBwCXPyp8vumIf0zMI4NodVkFlwU9VtzNTE4wCeQcPfDfiqgjedgu
+VAPID_PUBLIC_KEY=MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE-ar3dONfWAX0ZLoCbt_7Fr2OaErxCae63QcAlz8qfL7piH9MzCODaHVZBZcFPVbczUxOMAnkHD3w34qoI3nYLg
 VAPID_EMAIL=admin@salafacil.com
 
 # === EMAIL CONFIGURATION ===
