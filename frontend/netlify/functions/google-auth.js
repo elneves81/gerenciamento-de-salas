@@ -25,13 +25,24 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { token } = JSON.parse(event.body || '{}');
+    // Debug: log do body recebido
+    console.log('Body recebido:', event.body);
+    
+    const bodyData = JSON.parse(event.body || '{}');
+    console.log('Body parseado:', bodyData);
+    
+    // Aceitar tanto 'token' quanto 'credential' (Google retorna credential)
+    const token = bodyData.token || bodyData.credential || bodyData.id_token;
     
     if (!token) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Token Google é obrigatório' })
+        body: JSON.stringify({ 
+          error: 'Token Google é obrigatório',
+          received: bodyData,
+          debug: 'Campos esperados: token, credential ou id_token'
+        })
       };
     }
 
