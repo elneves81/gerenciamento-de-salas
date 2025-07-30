@@ -37,7 +37,7 @@ import {
   PieChart,
   Filter,
   Share,
-  Print,
+  Printer,
   Mail
 } from 'lucide-react';
 import * as XLSX from 'xlsx';

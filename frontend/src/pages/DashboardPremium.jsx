@@ -87,8 +87,9 @@ import { ptBR } from 'date-fns/locale';
 import api from '../services/api';
 import GraficosInterativosSimples from '../components/GraficosInterativosSimples';
 import RelatoriosAvancados from '../components/RelatoriosAvancados';
-import GoogleCalendarStyle from '../components/GoogleCalendarStyle';
+import GoogleCalendarResponsive from '../components/GoogleCalendarResponsive';
 import { useNotifications, useAutoNotifications } from '../components/NotificationSystem';
+import useReunioesAutoUpdate from '../hooks/useReunioesAutoUpdate';
 
 const DashboardPremium = () => {
   const navigate = useNavigate();
@@ -185,6 +186,13 @@ const DashboardPremium = () => {
 
   // Hook para notificações automáticas
   const { notifyReservationEvent } = useAutoNotifications(reservas);
+
+  // Hook para atualização automática de reuniões
+  const { verificarReunioesTerminadas } = useReunioesAutoUpdate(allReservas, (reservaAtualizada) => {
+    // Callback para quando uma reserva é atualizada automaticamente
+    setAllReservas(prev => prev.map(r => r.id === reservaAtualizada.id ? reservaAtualizada : r));
+    loadAllData(); // Recarregar dados para sincronizar
+  });
 
   const loadAllData = async () => {
     try {
@@ -665,33 +673,43 @@ const DashboardPremium = () => {
           <Tabs 
             value={activeTab} 
             onChange={(e, newValue) => setActiveTab(newValue)}
-            variant="fullWidth"
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
+            variant={isMobile ? "scrollable" : "fullWidth"}
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{ 
+              borderBottom: 1, 
+              borderColor: 'divider',
+              '& .MuiTab-root': {
+                minWidth: isMobile ? 120 : 'auto',
+                fontSize: isMobile ? '0.8rem' : '0.875rem',
+                padding: isMobile ? '6px 12px' : '12px 16px'
+              }
+            }}
           >
             <Tab 
-              label="Visão Geral" 
+              label={isMobile ? "Geral" : "Visão Geral"}
               icon={<DashboardIcon />} 
-              iconPosition="start"
+              iconPosition={isMobile ? "top" : "start"}
             />
             <Tab 
               label="Análises" 
               icon={<Assessment />} 
-              iconPosition="start"
+              iconPosition={isMobile ? "top" : "start"}
             />
             <Tab 
               label="Relatórios" 
               icon={<BarChart />} 
-              iconPosition="start"
+              iconPosition={isMobile ? "top" : "start"}
             />
             <Tab 
               label="Calendário" 
               icon={<CalendarToday />} 
-              iconPosition="start"
+              iconPosition={isMobile ? "top" : "start"}
             />
             <Tab 
               label="Gráficos" 
               icon={<Analytics />} 
-              iconPosition="start"
+              iconPosition={isMobile ? "top" : "start"}
             />
           </Tabs>
         </Paper>
@@ -1625,8 +1643,8 @@ const DashboardPremium = () => {
 
         {/* Tab de Calendário */}
         {activeTab === 3 && (
-          <Box sx={{ mt: 2, height: '70vh' }}>
-            <GoogleCalendarStyle reservas={allReservas} salas={salas} />
+          <Box sx={{ mt: 2, height: { xs: 'auto', md: '70vh' } }}>
+            <GoogleCalendarResponsive reservas={allReservas} salas={salas} />
           </Box>
         )}
 
