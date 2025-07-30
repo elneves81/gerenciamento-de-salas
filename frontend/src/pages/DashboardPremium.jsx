@@ -86,6 +86,7 @@ import {
 import { format, isToday, isTomorrow, parseISO, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import api from '../services/api';
+import ChatSystem from '../components/ChatSystem';
 import GraficosInterativosSimples from '../components/GraficosInterativosSimples';
 import RelatoriosAvancados from '../components/RelatoriosAvancados';
 import GoogleCalendarResponsive from '../components/GoogleCalendarResponsive';
@@ -1861,6 +1862,9 @@ const DashboardPremium = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
+        
+        {/* Sistema de Chat Global */}
+        <ChatSystem />
       </Box>
     </Container>
   );

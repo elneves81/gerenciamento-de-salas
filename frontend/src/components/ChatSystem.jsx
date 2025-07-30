@@ -63,6 +63,7 @@ const ChatSystem = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [error, setError] = useState(null);
   
   // Estados de UI
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,7 +72,8 @@ const ChatSystem = ({ onClose }) => {
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user) {
+      setError(null);
       loadConversations();
       loadUsers();
       // Configurar polling para mensagens em tempo real
@@ -98,6 +100,7 @@ const ChatSystem = ({ onClose }) => {
 
   const loadConversations = async () => {
     try {
+      setError(null);
       const response = await api.get('/conversations');
       setConversations(response.data || []);
       
@@ -106,6 +109,8 @@ const ChatSystem = ({ onClose }) => {
       setUnreadCount(unread);
     } catch (error) {
       console.error('Erro ao carregar conversas:', error);
+      setError('Erro ao carregar conversas. Tente novamente.');
+      setConversations([]);
     }
   };
 
@@ -123,10 +128,13 @@ const ChatSystem = ({ onClose }) => {
 
   const loadUsers = async () => {
     try {
-      const response = await api.get('/users/');
+      setError(null);
+      const response = await api.get('/users');
       setUsers(response.data || []);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
+      setError('Erro ao carregar usuários. Tente novamente.');
+      setUsers([]);
     }
   };
 
@@ -572,14 +580,36 @@ const ChatSystem = ({ onClose }) => {
 
   return (
     <>
-      {/* FAB do Chat */}
-      {!isOpen && <ChatFAB />}
+      {/* Verificar se usuário está logado */}
+      {!user ? (
+        <Tooltip title="Faça login para usar o chat">
+          <span>
+            <Fab
+              disabled
+              sx={{
+                position: 'fixed',
+                bottom: 16,
+                right: 16,
+                bgcolor: 'grey.400',
+                '&:hover': {
+                  bgcolor: 'grey.500',
+                },
+              }}
+            >
+              <Chat />
+            </Fab>
+          </span>
+        </Tooltip>
+      ) : (
+        <>
+          {/* FAB do Chat */}
+          {!isOpen && <ChatFAB />}
 
-      {/* Dialog Principal do Chat */}
-      <Dialog
-        open={isOpen}
-        onClose={() => setIsOpen(false)}
-        maxWidth="md"
+          {/* Dialog Principal do Chat */}
+          <Dialog
+            open={isOpen}
+            onClose={() => setIsOpen(false)}
+            maxWidth="md"
         fullWidth
         fullScreen={isMobile}
         PaperProps={{
@@ -639,6 +669,8 @@ const ChatSystem = ({ onClose }) => {
       {/* Dialogs e Menus */}
       <NewChatDialog />
       <OptionsMenu />
+      </>
+      )}
     </>
   );
 };

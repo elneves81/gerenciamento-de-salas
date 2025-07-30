@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Calendar, Users, Building2, Clock, Plus } from 'lucide-react';
+import ChatSystem from '../components/ChatSystem';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -170,6 +171,9 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+      
+      {/* Sistema de Chat Global */}
+      <ChatSystem />
     </div>
   );
 };
