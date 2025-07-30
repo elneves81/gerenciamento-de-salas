@@ -1,5 +1,5 @@
 # chat/views.py
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -198,9 +198,11 @@ class NotificationViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Retorna apenas notificações do usuário logado"""
-        return Notification.objects.filter(
-            recipient=self.request.user
-        ).order_by('-created_at')
+        if self.request.user.is_authenticated:
+            return Notification.objects.filter(
+                recipient=self.request.user
+            ).order_by('-created_at')
+        return Notification.objects.none()
     
     @action(detail=False, methods=['post'])
     def mark_read(self, request):
