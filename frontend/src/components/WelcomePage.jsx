@@ -45,6 +45,7 @@ const WelcomePage = ({ onContinue }) => {
 
   const checkAdminStatus = async () => {
     try {
+      console.log('🔍 Verificando status do admin...');
       const response = await fetch('/.netlify/functions/check-admin-status', {
         method: 'GET',
         headers: {
@@ -54,7 +55,10 @@ const WelcomePage = ({ onContinue }) => {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('📊 Status do admin recebido:', data);
         setAdminStatus(data);
+      } else {
+        console.error('❌ Erro na resposta da API:', response.status);
       }
     } catch (error) {
       console.error('Erro ao verificar status do admin:', error);
@@ -174,6 +178,7 @@ const WelcomePage = ({ onContinue }) => {
             </Slide>
 
             {/* Alerta para criar Super Admin se necessário */}
+            {console.log('🎯 Admin Status atual:', adminStatus)}
             {adminStatus?.needsSetup && (
               <Slide direction="down" in={showContent} timeout={600}>
                 <Alert 
@@ -195,7 +200,7 @@ const WelcomePage = ({ onContinue }) => {
                         '&:hover': { bgcolor: '#f57c00' }
                       }}
                     >
-                      Configurar Agora
+                      Configurar Sistema
                     </Button>
                   }
                 >
