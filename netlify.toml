@@ -6,6 +6,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  NETLIFY_SKIP_CACHE = "true"
 
 # Functions usando bundler mais estável
 [functions]
