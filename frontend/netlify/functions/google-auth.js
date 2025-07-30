@@ -1,21 +1,21 @@
 const { OAuth2Client } = require('google-auth-library');
 
-const GOOGLE_CLIENT_ID = '36056591466-9e4p0fv7kjld87cr1b1q0i7o2i94jjvd.apps.googleusercontent.com';
-const BACKEND_URL = process.env.BACKEND_URL || 'https://gerenciamentosalas-backend.onrender.com';
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// Headers CORS
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Content-Type': 'application/json'
+};
 
 exports.handler = async (event, context) => {
-  // Configurar CORS
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Content-Type': 'application/json'
-  };
-
+  // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers,
+      headers: corsHeaders,
       body: ''
     };
   }
@@ -23,7 +23,7 @@ exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers,
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Método não permitido' })
     };
   }
@@ -34,81 +34,69 @@ exports.handler = async (event, context) => {
     if (!token) {
       return {
         statusCode: 400,
-        headers,
+        headers: corsHeaders,
         body: JSON.stringify({ error: 'Token não fornecido' })
       };
     }
 
-    // Verificar token Google
-    const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+    // Verificar token com Google
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: GOOGLE_CLIENT_ID,
+      audience: process.env.GOOGLE_CLIENT_ID
     });
 
     const payload = ticket.getPayload();
-    const userData = {
-      id: payload.sub,
-      email: payload.email,
-      name: payload.name,
-      picture: payload.picture
-    };
+    const { email, name, sub: google_id, picture } = payload;
 
-    // Sincronizar com Django backend
+    // Sincronizar com banco via API interna
     try {
-      const syncResponse = await fetch(`${BACKEND_URL}/api/database/sync-user/`, {
+      const syncResponse = await fetch(`${process.env.URL}/.netlify/functions/api/database/sync-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify({
+          email,
+          name,
+          id: google_id,
+          picture
+        })
       });
 
       if (syncResponse.ok) {
-        const syncData = await syncResponse.json();
-        console.log('✅ Usuário sincronizado com backend:', syncData);
-        
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            user: {
-              ...userData,
-              role: syncData.user?.role || 'user',
-              status: syncData.user?.status || 'active'
-            }
-          })
-        };
+        const userData = await syncResponse.json();
+        console.log('✅ Usuário sincronizado com banco:', userData);
       } else {
-        console.warn('⚠️ Falha na sincronização, continuando com dados do Google');
+        console.log('⚠️ Falha na sincronização, usando dados do Google');
       }
     } catch (syncError) {
-      console.warn('⚠️ Erro na sincronização com backend:', syncError.message);
+      console.log('⚠️ Erro na sincronização:', syncError.message);
     }
 
-    // Retornar dados do Google mesmo se a sincronização falhar
     return {
       statusCode: 200,
-      headers,
+      headers: corsHeaders,
       body: JSON.stringify({
         success: true,
         user: {
-          ...userData,
-          role: 'user',
-          status: 'active'
+          email,
+          name,
+          google_id,
+          picture,
+          verified: true
         }
       })
     };
 
   } catch (error) {
-    console.error('❌ Erro na autenticação:', error);
+    console.error('Erro na autenticação Google:', error);
+    
     return {
-      statusCode: 500,
-      headers,
+      statusCode: 401,
+      headers: corsHeaders,
       body: JSON.stringify({
         success: false,
-        error: 'Erro interno do servidor'
+        error: 'Token inválido'
       })
     };
   }

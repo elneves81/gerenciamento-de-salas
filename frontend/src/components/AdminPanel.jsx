@@ -1,24 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Container,
-  Grid,
-  Card,
-  CardContent,
   Typography,
   Button,
-  Avatar,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Table,
   TableBody,
   TableCell,
@@ -26,411 +10,401 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Tooltip,
-  Badge,
-  Fab,
-  Switch,
-  FormControlLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Card,
+  CardContent,
+  Grid,
+  Chip,
+  IconButton,
+  Alert,
+  CircularProgress,
   Tabs,
-  Tab,
-  Divider
+  Tab
 } from '@mui/material';
 import {
-  AdminPanelSettings as AdminIcon,
-  People as PeopleIcon,
-  PersonAdd as PersonAddIcon,
+  Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Block as BlockIcon,
-  Notifications as NotificationIcon,
+  CheckCircle as CheckCircleIcon,
+  Group as GroupIcon,
   Business as BusinessIcon,
-  Send as SendIcon,
-  Visibility as ViewIcon,
-  AccountTree as TreeIcon,
-  Dashboard as DashboardIcon,
-  MeetingRoom as RoomIcon,
-  Settings as SettingsIcon,
-  Save as SaveIcon
+  SupervisorAccount as SupervisorAccountIcon,
+  TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
-import GerenciarSalas from '../pages/GerenciarSalas';
-import UserHierarchy from './UserHierarchy';
-import CreateSuperAdmin from './CreateSuperAdmin';
 
-// Componente de Tab Panel
-function TabPanel({ children, value, index, ...other }) {
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`admin-tabpanel-${index}`}
-      aria-labelledby={`admin-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ py: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
+// Configuração da API
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://your-site.netlify.app/api' 
+  : 'http://localhost:3000/api';
 
-const AdminPanel = () => {
-  const { user } = useAuth();
+function AdminPanel() {
+  const [activeTab, setActiveTab] = useState(0);
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [tabValue, setTabValue] = useState(0);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeUsers: 0,
-    blockedUsers: 0,
-    totalDepartments: 0
-  });
+  const [stats, setStats] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [dialogType, setDialogType] = useState(''); // 'user', 'department'
+  const [editingItem, setEditingItem] = useState(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  // Função para gerenciar mudança de abas
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
-
-  // Dialogs state
-  const [openUserDialog, setOpenUserDialog] = useState(false);
-  const [openNotificationDialog, setOpenNotificationDialog] = useState(false);
-  const [openDepartmentDialog, setOpenDepartmentDialog] = useState(false);
-  const [openSuperAdminDialog, setOpenSuperAdminDialog] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-
-  // Forms state
+  // Estados dos formulários
   const [userForm, setUserForm] = useState({
     nome: '',
     email: '',
     telefone: '',
     role: 'user',
-    department_id: '',
-    manager_id: ''
-  });
-
-  const [notificationForm, setNotificationForm] = useState({
-    title: '',
-    message: '',
-    recipient_id: '',
-    type: 'admin_message'
+    department: '',
+    manager: ''
   });
 
   const [departmentForm, setDepartmentForm] = useState({
     name: '',
     description: '',
-    parent_id: ''
+    parent: ''
   });
 
+  // Carregar dados iniciais
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
+    setLoading(true);
     try {
-      // Carregar dados reais das APIs Django
-      const [usersResponse, departmentsResponse, statsResponse] = await Promise.all([
-        api.get('/admin/users/'),
-        api.get('/admin/departments/'),
-        api.get('/admin/stats/')
+      await Promise.all([
+        loadUsers(),
+        loadDepartments(),
+        loadStats()
       ]);
-
-      setUsers(usersResponse.data.results || usersResponse.data);
-      setDepartments(departmentsResponse.data.results || departmentsResponse.data);
-      setStats(statsResponse.data);
-
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      
-      // Fallback para dados mock em caso de erro
-      const mockUsers = [
+      setError('Erro ao carregar dados: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/users/`);
+      if (!response.ok) throw new Error('Erro ao carregar usuários');
+      const data = await response.json();
+      setUsers(data.results || []);
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+      // Fallback para dados mock se API falhar
+      setUsers([
         {
           id: 1,
-          nome: 'Admin Sistema',
-          email: 'admin@salafacil.com',
-          telefone: '(45) 99999-9999',
+          nome: 'Usuário Demo',
+          email: 'demo@salafacil.com',
+          telefone: '(11) 99999-9999',
           role: 'admin',
           status: 'active',
-          department: 1,
-          manager: null
-        },
-        {
-          id: 2,
-          nome: 'Usuário Teste',
-          email: 'usuario@salafacil.com',
-          telefone: '(45) 88888-8888',
-          role: 'user',
-          status: 'active',
-          department: 1,
-          manager: 1
+          department_name: 'Administração',
+          created_at: new Date().toISOString()
         }
-      ];
+      ]);
+    }
+  };
 
-      const mockDepartments = [
-        {
-          id: 1,
-          name: 'Administração',
-          description: 'Departamento Administrativo',
-          parent: null
-        },
-        {
-          id: 2,
-          name: 'TI',
-          description: 'Tecnologia da Informação',
-          parent: 1
-        }
-      ];
+  const loadDepartments = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/departments/`);
+      if (!response.ok) throw new Error('Erro ao carregar departamentos');
+      const data = await response.json();
+      setDepartments(data.results || []);
+    } catch (error) {
+      console.error('Erro ao carregar departamentos:', error);
+      // Fallback para dados mock
+      setDepartments([
+        { id: 1, name: 'Administração', description: 'Departamento Administrativo', users_count: 5 },
+        { id: 2, name: 'TI', description: 'Tecnologia da Informação', users_count: 3 },
+        { id: 3, name: 'RH', description: 'Recursos Humanos', users_count: 2 }
+      ]);
+    }
+  };
 
-      setUsers(mockUsers);
-      setDepartments(mockDepartments);
-
-      // Calcular estatísticas dos dados mock
-      const totalUsers = mockUsers.length;
-      const activeUsers = mockUsers.filter(u => u.status === 'active').length;
-      const blockedUsers = mockUsers.filter(u => u.status === 'blocked').length;
-      
+  const loadStats = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/stats/`);
+      if (!response.ok) throw new Error('Erro ao carregar estatísticas');
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error);
+      // Fallback para dados mock
       setStats({
-        total_users: totalUsers,
-        active_users: activeUsers,
-        blocked_users: blockedUsers,
-        total_departments: mockDepartments.length
+        total_users: 10,
+        active_users: 8,
+        blocked_users: 2,
+        admin_users: 3,
+        total_departments: 3,
+        recent_logins: 5
       });
     }
   };
 
   const handleCreateUser = async () => {
     try {
-      const userData = {
-        nome: userForm.nome,
-        email: userForm.email,
-        telefone: userForm.telefone,
-        role: userForm.role,
-        department: userForm.department_id || null,
-        manager: userForm.manager_id || null
-      };
+      const response = await fetch(`${API_BASE_URL}/admin/users/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userForm)
+      });
 
-      await api.post('/admin/users/', userData);
+      if (!response.ok) throw new Error('Erro ao criar usuário');
       
-      setOpenUserDialog(false);
-      setUserForm({ nome: '', email: '', telefone: '', role: 'user', department_id: '', manager_id: '' });
-      
-      // Recarregar dados
-      loadData();
-      
-      alert(`Usuário "${userForm.nome}" criado com sucesso!`);
+      setSuccess('Usuário criado com sucesso!');
+      setOpenDialog(false);
+      resetForms();
+      loadUsers();
     } catch (error) {
-      console.error('Erro ao criar usuário:', error);
-      const errorMessage = error.response?.data?.error || 'Erro ao criar usuário';
-      alert(`Erro: ${errorMessage}`);
+      setError('Erro ao criar usuário: ' + error.message);
     }
   };
 
   const handleUpdateUser = async () => {
     try {
-      const userData = {
-        nome: userForm.nome,
-        email: userForm.email,
-        telefone: userForm.telefone,
-        role: userForm.role,
-        department: userForm.department_id || null,
-        manager: userForm.manager_id || null
-      };
+      const response = await fetch(`${API_BASE_URL}/admin/users/${editingItem.id}/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userForm)
+      });
 
-      await api.put(`/admin/users/${selectedUser.id}/`, userData);
+      if (!response.ok) throw new Error('Erro ao atualizar usuário');
       
-      setOpenUserDialog(false);
-      setSelectedUser(null);
-      setUserForm({ nome: '', email: '', telefone: '', role: 'user', department_id: '', manager_id: '' });
-      
-      // Recarregar dados
-      loadData();
-      
-      alert(`Usuário "${userForm.nome}" atualizado com sucesso!`);
+      setSuccess('Usuário atualizado com sucesso!');
+      setOpenDialog(false);
+      resetForms();
+      loadUsers();
     } catch (error) {
-      console.error('Erro ao atualizar usuário:', error);
-      const errorMessage = error.response?.data?.error || 'Erro ao atualizar usuário';
-      alert(`Erro: ${errorMessage}`);
-    }
-  };
-
-  const handleBlockUser = async (userId, currentStatus) => {
-    try {
-      await api.patch(`/admin/users/${userId}/block_user/`);
-      
-      const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
-      const action = newStatus === 'blocked' ? 'bloqueado' : 'desbloqueado';
-      
-      // Recarregar dados
-      loadData();
-      
-      alert(`Usuário ${action} com sucesso!`);
-    } catch (error) {
-      console.error('Erro ao alterar status:', error);
-      const errorMessage = error.response?.data?.error || 'Erro ao alterar status do usuário';
-      alert(`Erro: ${errorMessage}`);
+      setError('Erro ao atualizar usuário: ' + error.message);
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita.')) {
-      try {
-        await api.delete(`/admin/users/${userId}/`);
-        
-        // Recarregar dados
-        loadData();
-        
-        alert('Usuário deletado com sucesso!');
-      } catch (error) {
-        console.error('Erro ao deletar usuário:', error);
-        const errorMessage = error.response?.data?.error || 'Erro ao deletar usuário';
-        alert(`Erro: ${errorMessage}`);
-      }
+    if (!window.confirm('Tem certeza que deseja excluir este usuário?')) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Erro ao excluir usuário');
+      
+      setSuccess('Usuário excluído com sucesso!');
+      loadUsers();
+    } catch (error) {
+      setError('Erro ao excluir usuário: ' + error.message);
     }
   };
 
-  const handleSendNotification = async () => {
+  const handleBlockUser = async (userId) => {
     try {
-      const notificationData = {
-        title: notificationForm.title,
-        message: notificationForm.message,
-        recipient: notificationForm.recipient_id || null,
-        type: notificationForm.type
-      };
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/block_user/`, {
+        method: 'PATCH'
+      });
 
-      await api.post('/admin/notifications/', notificationData);
+      if (!response.ok) throw new Error('Erro ao bloquear/desbloquear usuário');
       
-      setOpenNotificationDialog(false);
-      setNotificationForm({ title: '', message: '', recipient_id: '', type: 'admin_message' });
-      
-      alert(`Notificação "${notificationForm.title}" enviada com sucesso!`);
+      setSuccess('Status do usuário alterado com sucesso!');
+      loadUsers();
     } catch (error) {
-      console.error('Erro ao enviar notificação:', error);
-      const errorMessage = error.response?.data?.error || 'Erro ao enviar notificação';
-      alert(`Erro: ${errorMessage}`);
+      setError('Erro ao alterar status do usuário: ' + error.message);
     }
   };
 
   const handleCreateDepartment = async () => {
     try {
-      const departmentData = {
-        name: departmentForm.name,
-        description: departmentForm.description,
-        parent: departmentForm.parent_id || null
-      };
+      const response = await fetch(`${API_BASE_URL}/admin/departments/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(departmentForm)
+      });
 
-      await api.post('/admin/departments/', departmentData);
+      if (!response.ok) throw new Error('Erro ao criar departamento');
       
-      setOpenDepartmentDialog(false);
-      setDepartmentForm({ name: '', description: '', parent_id: '' });
-      
-      // Recarregar dados
-      loadData();
-      
-      alert(`Departamento "${departmentForm.name}" criado com sucesso!`);
+      setSuccess('Departamento criado com sucesso!');
+      setOpenDialog(false);
+      resetForms();
+      loadDepartments();
     } catch (error) {
-      console.error('Erro ao criar departamento:', error);
-      const errorMessage = error.response?.data?.error || 'Erro ao criar departamento';
-      alert(`Erro: ${errorMessage}`);
+      setError('Erro ao criar departamento: ' + error.message);
     }
   };
 
-  const openEditUser = (userToEdit) => {
-    setSelectedUser(userToEdit);
-    setUserForm({
-      nome: userToEdit.nome,
-      email: userToEdit.email,
-      telefone: userToEdit.telefone || '',
-      role: userToEdit.role,
-      department_id: userToEdit.department_id || '',
-      manager_id: userToEdit.manager_id || ''
-    });
-    setOpenUserDialog(true);
+  const openUserDialog = (user = null) => {
+    setDialogType('user');
+    setEditingItem(user);
+    if (user) {
+      setUserForm({
+        nome: user.nome || '',
+        email: user.email || '',
+        telefone: user.telefone || '',
+        role: user.role || 'user',
+        department: user.department_id || '',
+        manager: user.manager_id || ''
+      });
+    }
+    setOpenDialog(true);
   };
 
-  return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      {/* Header */}
-      <Box mb={4}>
-        <Typography variant="h4" gutterBottom>
-          <AdminIcon sx={{ mr: 2, verticalAlign: 'middle' }} />
-          Painel Administrativo
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Gerencie usuários, departamentos, salas e notificações do sistema
-        </Typography>
+  const openDepartmentDialog = (department = null) => {
+    setDialogType('department');
+    setEditingItem(department);
+    if (department) {
+      setDepartmentForm({
+        name: department.name || '',
+        description: department.description || '',
+        parent: department.parent_id || ''
+      });
+    }
+    setOpenDialog(true);
+  };
+
+  const resetForms = () => {
+    setUserForm({
+      nome: '',
+      email: '',
+      telefone: '',
+      role: 'user',
+      department: '',
+      manager: ''
+    });
+    setDepartmentForm({
+      name: '',
+      description: '',
+      parent: ''
+    });
+    setEditingItem(null);
+  };
+
+  const closeDialog = () => {
+    setOpenDialog(false);
+    resetForms();
+    setError('');
+  };
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'superadmin': return 'error';
+      case 'admin': return 'warning';
+      case 'manager': return 'info';
+      default: return 'default';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    return status === 'active' ? 'success' : 'error';
+  };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
       </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ p: 3 }}>
+      {/* Alertas */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
+
+      <Typography variant="h4" component="h1" gutterBottom>
+        Painel Administrativo
+      </Typography>
 
       {/* Cards de Estatísticas */}
-      <Grid container spacing={3} mb={4}>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center">
-                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                  <PeopleIcon />
-                </Avatar>
+                <GroupIcon color="primary" sx={{ mr: 2 }} />
                 <Box>
-                  <Typography variant="h4">{stats.total_users || 0}</Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography color="textSecondary" gutterBottom>
                     Total de Usuários
                   </Typography>
+                  <Typography variant="h5">
+                    {stats.total_users || 0}
+                  </Typography>
                 </Box>
               </Box>
             </CardContent>
           </Card>
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center">
-                <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                  <Badge badgeContent={stats.activeUsers} color="success">
-                    <PeopleIcon />
-                  </Badge>
-                </Avatar>
+                <CheckCircleIcon color="success" sx={{ mr: 2 }} />
                 <Box>
-                  <Typography variant="h4">{stats.active_users || 0}</Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography color="textSecondary" gutterBottom>
                     Usuários Ativos
                   </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <Avatar sx={{ bgcolor: 'error.main', mr: 2 }}>
-                  <BlockIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h4">{stats.blocked_users || 0}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Usuários Bloqueados
+                  <Typography variant="h5">
+                    {stats.active_users || 0}
                   </Typography>
                 </Box>
               </Box>
             </CardContent>
           </Card>
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center">
-                <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                  <BusinessIcon />
-                </Avatar>
+                <SupervisorAccountIcon color="warning" sx={{ mr: 2 }} />
                 <Box>
-                  <Typography variant="h4">{stats.total_departments || 0}</Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography color="textSecondary" gutterBottom>
+                    Administradores
+                  </Typography>
+                  <Typography variant="h5">
+                    {stats.admin_users || 0}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center">
+                <BusinessIcon color="info" sx={{ mr: 2 }} />
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
                     Departamentos
+                  </Typography>
+                  <Typography variant="h5">
+                    {stats.total_departments || 0}
                   </Typography>
                 </Box>
               </Box>
@@ -439,87 +413,35 @@ const AdminPanel = () => {
         </Grid>
       </Grid>
 
-      {/* Navegação em Abas */}
-      <Card>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange} aria-label="admin tabs">
-            <Tab 
-              icon={<PeopleIcon />} 
-              label="Usuários" 
-              id="admin-tab-0"
-              aria-controls="admin-tabpanel-0"
-            />
-            <Tab 
-              icon={<RoomIcon />} 
-              label="Gerenciar Salas" 
-              id="admin-tab-1"
-              aria-controls="admin-tabpanel-1"
-            />
-            <Tab 
-              icon={<TreeIcon />} 
-              label="Hierarquia" 
-              id="admin-tab-2"
-              aria-controls="admin-tabpanel-2"
-            />
-            <Tab 
-              icon={<SettingsIcon />} 
-              label="Configurações" 
-              id="admin-tab-3"
-              aria-controls="admin-tabpanel-3"
-            />
-          </Tabs>
-        </Box>
+      {/* Tabs de Navegação */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+          <Tab label="Usuários" />
+          <Tab label="Departamentos" />
+        </Tabs>
+      </Box>
 
-        {/* Tab Usuários */}
-        <TabPanel value={tabValue} index={0}>
-          {/* Botões de Ação para Usuários */}
-          <Box mb={3} display="flex" gap={2} flexWrap="wrap">
+      {/* Tab de Usuários */}
+      {activeTab === 0 && (
+        <Box>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h6">Gerenciar Usuários</Typography>
             <Button
               variant="contained"
-              startIcon={<PersonAddIcon />}
-              onClick={() => setOpenUserDialog(true)}
+              startIcon={<AddIcon />}
+              onClick={() => openUserDialog()}
             >
-              Criar Usuário
-            </Button>
-            
-            <Button
-              variant="outlined"
-              startIcon={<NotificationIcon />}
-              onClick={() => setOpenNotificationDialog(true)}
-            >
-              Enviar Notificação
-            </Button>
-            
-            <Button
-              variant="outlined"
-              startIcon={<BusinessIcon />}
-              onClick={() => setOpenDepartmentDialog(true)}
-            >
-              Criar Departamento
-            </Button>
-            
-            <Button
-              variant="outlined"
-              startIcon={<AdminIcon />}
-              onClick={() => setOpenSuperAdminDialog(true)}
-              color="warning"
-            >
-              Criar Super Admin
+              Novo Usuário
             </Button>
           </Box>
 
-          {/* Tabela de Usuários */}
-          <Typography variant="h6" gutterBottom>
-            <PeopleIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Gerenciamento de Usuários
-          </Typography>
-          
-          <TableContainer>
+          <TableContainer component={Paper}>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Usuário</TableCell>
+                  <TableCell>Nome</TableCell>
                   <TableCell>Email</TableCell>
+                  <TableCell>Telefone</TableCell>
                   <TableCell>Função</TableCell>
                   <TableCell>Departamento</TableCell>
                   <TableCell>Status</TableCell>
@@ -527,222 +449,166 @@ const AdminPanel = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {users.map((userItem) => (
-                  <TableRow key={userItem.id}>
-                    <TableCell>
-                      <Box display="flex" alignItems="center">
-                        <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
-                          {userItem.nome?.charAt(0)}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" fontWeight="bold">
-                            {userItem.nome}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            ID: {userItem.id}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>{userItem.email}</TableCell>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>{user.nome}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.telefone || '-'}</TableCell>
                     <TableCell>
                       <Chip
-                        label={userItem.role === 'admin' ? 'Admin' : 'Usuário'}
-                        color={userItem.role === 'admin' ? 'warning' : 'default'}
+                        label={user.role}
+                        color={getRoleColor(user.role)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>{user.department_name || '-'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={user.status}
+                        color={getStatusColor(user.status)}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
-                      {departments.find(d => d.id === userItem.department)?.name || '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={userItem.status === 'active' ? 'Ativo' : 'Bloqueado'}
-                        color={userItem.status === 'active' ? 'success' : 'error'}
+                      <IconButton
                         size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" gap={1}>
-                        <Tooltip title="Editar">
-                          <IconButton
-                            size="small"
-                            onClick={() => openEditUser(userItem)}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        
-                        <Tooltip title={userItem.status === 'blocked' ? 'Desbloquear' : 'Bloquear'}>
-                          <IconButton
-                            size="small"
-                            color={userItem.status === 'blocked' ? 'success' : 'warning'}
-                            onClick={() => handleBlockUser(userItem.id, userItem.status)}
-                          >
-                            <BlockIcon />
-                          </IconButton>
-                        </Tooltip>
-                        
-                        <Tooltip title="Deletar">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDeleteUser(userItem.id)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
+                        onClick={() => openUserDialog(user)}
+                        color="primary"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleBlockUser(user.id)}
+                        color={user.status === 'active' ? 'error' : 'success'}
+                      >
+                        <BlockIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteUser(user.id)}
+                        color="error"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
-        </TabPanel>
+        </Box>
+      )}
 
-        {/* Tab Gerenciar Salas */}
-        <TabPanel value={tabValue} index={1}>
-          <GerenciarSalas />
-        </TabPanel>
-
-        {/* Tab Hierarquia */}
-        <TabPanel value={tabValue} index={2}>
-          <UserHierarchy users={users} departments={departments} />
-        </TabPanel>
-
-        {/* Tab Configurações */}
-        <TabPanel value={tabValue} index={3}>
-          <Box p={3}>
-            <Typography variant="h6" gutterBottom>
-              Configurações do Sistema
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Configurações avançadas do sistema serão implementadas aqui.
-            </Typography>
+      {/* Tab de Departamentos */}
+      {activeTab === 1 && (
+        <Box>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h6">Gerenciar Departamentos</Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => openDepartmentDialog()}
+            >
+              Novo Departamento
+            </Button>
           </Box>
-        </TabPanel>
-      </Card>
 
-      {/* Dialog de Criar/Editar Usuário */}
-      <Dialog open={openUserDialog} onClose={() => setOpenUserDialog(false)} maxWidth="md" fullWidth>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nome</TableCell>
+                  <TableCell>Descrição</TableCell>
+                  <TableCell>Usuários</TableCell>
+                  <TableCell>Ações</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {departments.map((dept) => (
+                  <TableRow key={dept.id}>
+                    <TableCell>{dept.name}</TableCell>
+                    <TableCell>{dept.description || '-'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={`${dept.users_count || 0} usuários`}
+                        color="primary"
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => openDepartmentDialog(dept)}
+                        color="primary"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
+
+      {/* Dialog de Usuário */}
+      <Dialog open={openDialog && dialogType === 'user'} onClose={closeDialog} maxWidth="md" fullWidth>
         <DialogTitle>
-          {selectedUser ? 'Editar Usuário' : 'Criar Novo Usuário'}
+          {editingItem ? 'Editar Usuário' : 'Novo Usuário'}
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Nome Completo"
+                label="Nome"
                 value={userForm.nome}
-                onChange={(e) => setUserForm({...userForm, nome: e.target.value})}
+                onChange={(e) => setUserForm({ ...userForm, nome: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Email"
                 type="email"
                 value={userForm.email}
-                onChange={(e) => setUserForm({...userForm, email: e.target.value})}
+                onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Telefone"
                 value={userForm.telefone}
-                onChange={(e) => setUserForm({...userForm, telefone: e.target.value})}
+                onChange={(e) => setUserForm({ ...userForm, telefone: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel>Função</InputLabel>
                 <Select
                   value={userForm.role}
-                  onChange={(e) => setUserForm({...userForm, role: e.target.value})}
+                  onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
                 >
                   <MenuItem value="user">Usuário</MenuItem>
+                  <MenuItem value="manager">Gerente</MenuItem>
                   <MenuItem value="admin">Administrador</MenuItem>
+                  <MenuItem value="superadmin">Super Admin</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel>Departamento</InputLabel>
                 <Select
-                  value={userForm.department_id}
-                  onChange={(e) => setUserForm({...userForm, department_id: e.target.value})}
+                  value={userForm.department}
+                  onChange={(e) => setUserForm({ ...userForm, department: e.target.value })}
                 >
-                  <MenuItem value="">Nenhum</MenuItem>
-                  {departments.map(dept => (
-                    <MenuItem key={dept.id} value={dept.id}>{dept.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Gerente</InputLabel>
-                <Select
-                  value={userForm.manager_id}
-                  onChange={(e) => setUserForm({...userForm, manager_id: e.target.value})}
-                >
-                  <MenuItem value="">Nenhum</MenuItem>
-                  {users.filter(u => u.role === 'admin').map(admin => (
-                    <MenuItem key={admin.id} value={admin.id}>{admin.nome}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenUserDialog(false)}>Cancelar</Button>
-          <Button
-            variant="contained"
-            onClick={selectedUser ? handleUpdateUser : handleCreateUser}
-          >
-            {selectedUser ? 'Atualizar' : 'Criar'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialog de Enviar Notificação */}
-      <Dialog open={openNotificationDialog} onClose={() => setOpenNotificationDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Enviar Notificação Push</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Título"
-                value={notificationForm.title}
-                onChange={(e) => setNotificationForm({...notificationForm, title: e.target.value})}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Mensagem"
-                multiline
-                rows={3}
-                value={notificationForm.message}
-                onChange={(e) => setNotificationForm({...notificationForm, message: e.target.value})}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Destinatário</InputLabel>
-                <Select
-                  value={notificationForm.recipient_id}
-                  onChange={(e) => setNotificationForm({...notificationForm, recipient_id: e.target.value})}
-                >
-                  <MenuItem value="">Todos os usuários</MenuItem>
-                  {users.map(userItem => (
-                    <MenuItem key={userItem.id} value={userItem.id}>
-                      {userItem.nome} ({userItem.email})
+                  {departments.map((dept) => (
+                    <MenuItem key={dept.id} value={dept.id}>
+                      {dept.name}
                     </MenuItem>
                   ))}
                 </Select>
@@ -751,28 +617,29 @@ const AdminPanel = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenNotificationDialog(false)}>Cancelar</Button>
+          <Button onClick={closeDialog}>Cancelar</Button>
           <Button
+            onClick={editingItem ? handleUpdateUser : handleCreateUser}
             variant="contained"
-            startIcon={<SendIcon />}
-            onClick={handleSendNotification}
           >
-            Enviar
+            {editingItem ? 'Atualizar' : 'Criar'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Dialog de Criar Departamento */}
-      <Dialog open={openDepartmentDialog} onClose={() => setOpenDepartmentDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Criar Departamento</DialogTitle>
+      {/* Dialog de Departamento */}
+      <Dialog open={openDialog && dialogType === 'department'} onClose={closeDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {editingItem ? 'Editar Departamento' : 'Novo Departamento'}
+        </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Nome do Departamento"
+                label="Nome"
                 value={departmentForm.name}
-                onChange={(e) => setDepartmentForm({...departmentForm, name: e.target.value})}
+                onChange={(e) => setDepartmentForm({ ...departmentForm, name: e.target.value })}
               />
             </Grid>
             <Grid item xs={12}>
@@ -780,21 +647,23 @@ const AdminPanel = () => {
                 fullWidth
                 label="Descrição"
                 multiline
-                rows={2}
+                rows={3}
                 value={departmentForm.description}
-                onChange={(e) => setDepartmentForm({...departmentForm, description: e.target.value})}
+                onChange={(e) => setDepartmentForm({ ...departmentForm, description: e.target.value })}
               />
             </Grid>
             <Grid item xs={12}>
               <FormControl fullWidth>
                 <InputLabel>Departamento Pai</InputLabel>
                 <Select
-                  value={departmentForm.parent_id}
-                  onChange={(e) => setDepartmentForm({...departmentForm, parent_id: e.target.value})}
+                  value={departmentForm.parent}
+                  onChange={(e) => setDepartmentForm({ ...departmentForm, parent: e.target.value })}
                 >
-                  <MenuItem value="">Nenhum (Departamento Raiz)</MenuItem>
-                  {departments.map(dept => (
-                    <MenuItem key={dept.id} value={dept.id}>{dept.name}</MenuItem>
+                  <MenuItem value="">Nenhum</MenuItem>
+                  {departments.map((dept) => (
+                    <MenuItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -802,24 +671,17 @@ const AdminPanel = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDepartmentDialog(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={handleCreateDepartment}>
-            Criar
+          <Button onClick={closeDialog}>Cancelar</Button>
+          <Button
+            onClick={handleCreateDepartment}
+            variant="contained"
+          >
+            {editingItem ? 'Atualizar' : 'Criar'}
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Dialog para criar Super Admin */}
-      <CreateSuperAdmin
-        open={openSuperAdminDialog}
-        onClose={() => setOpenSuperAdminDialog(false)}
-        onSuccess={() => {
-          setOpenSuperAdminDialog(false);
-          loadData(); // Recarregar dados após criação
-        }}
-      />
-    </Container>
+    </Box>
   );
-};
+}
 
 export default AdminPanel;
