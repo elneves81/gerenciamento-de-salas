@@ -137,38 +137,73 @@ export const NotificationProvider = ({ children }) => {
         return;
       }
 
-      console.log('📡 Carregando notificações para user_id:', user.id);
-      console.log('🌐 URL da requisição:', `${api.defaults.baseURL}/chat/notifications/`);
-      console.log('🔑 Token presente:', localStorage.getItem('token') ? 'Sim' : 'Não');
+  const loadNotifications = async () => {
+    try {
+      // Debug: verificar estado do usuário
+      console.log('� Debug loadNotifications - user:', user);
+      console.log('🔍 Debug loadNotifications - user.id:', user?.id);
       
-      const response = await api.get('/chat/notifications/', {
-        params: { user_id: user.id }
-      });
-      
-      console.log('✅ Status da resposta:', response.status);
-      console.log('✅ Tipo da resposta:', typeof response.data);
-      
-      // Verificar se a API retornou HTML ao invés de JSON
-      if (typeof response.data === 'string' && response.data.includes('<!doctype html>')) {
-        console.error('❌ API retornou HTML - problema de autenticação ou URL incorreta');
-        console.error('🔍 Primeiros 100 chars da resposta:', response.data.substring(0, 100));
-        setNotifications([]);
-        setUnreadCount(0);
+      // Verificar se o usuário está logado
+      if (!user?.id) {
+        console.log('⚠️ Usuário não está logado, pulando carregamento de notificações');
         return;
       }
+
+      console.log('�📡 Carregando notificações para user_id:', user.id);
+      console.log('🌐 URL da requisição:', `${api.defaults.baseURL}/chat/notifications/`);
+      console.log('🔑 Token de autenticação:', localStorage.getItem('token') ? 'Presente' : 'Ausente');
       
-      console.log('✅ Resposta da API notificações:', response.data);
-      
-      // Garantir que sempre temos um array
+      let response;
       let notifs = [];
-      if (Array.isArray(response.data)) {
-        notifs = response.data;
-      } else if (response.data?.results && Array.isArray(response.data.results)) {
-        // Django REST pagination
-        notifs = response.data.results;
-      } else if (response.data) {
-        console.warn('Resposta da API não é um array:', typeof response.data, response.data);
-        notifs = [];
+
+      try {
+        // Tentar endpoint principal
+        response = await api.get('/chat/notifications/', {
+          params: { user_id: user.id }
+        });
+        
+        console.log('✅ Status da resposta:', response.status);
+        console.log('✅ Headers da resposta:', response.headers);
+        console.log('✅ Tipo da resposta:', typeof response.data);
+        console.log('✅ Resposta da API notificações:', response.data);
+
+        // Verificar se a resposta é HTML (erro de redirecionamento)
+        if (typeof response.data === 'string' && response.data.includes('<!doctype html>')) {
+          console.error('❌ API retornou HTML ao invés de JSON - possível problema de autenticação ou URL');
+          throw new Error('API_RETURNED_HTML');
+        }
+
+        if (Array.isArray(response.data)) {
+          notifs = response.data;
+        } else if (response.data?.results && Array.isArray(response.data.results)) {
+          // Django REST pagination
+          notifs = response.data.results;
+        } else if (response.data) {
+          console.warn('Resposta da API não é um array:', typeof response.data, response.data);
+          notifs = [];
+        }
+
+      } catch (apiError) {
+        console.error('❌ Erro no endpoint principal:', apiError);
+        
+        // Fallback: tentar endpoint alternativo
+        try {
+          console.log('🔄 Tentando endpoint alternativo...');
+          response = await api.get('/notifications/', {
+            params: { user_id: user.id }
+          });
+          
+          if (Array.isArray(response.data)) {
+            notifs = response.data;
+          } else if (response.data?.results) {
+            notifs = response.data.results;
+          }
+          
+          console.log('✅ Endpoint alternativo funcionou:', notifs.length, 'notificações');
+        } catch (fallbackError) {
+          console.error('❌ Endpoint alternativo também falhou:', fallbackError);
+          notifs = [];
+        }
       }
       
       setNotifications(notifs);
