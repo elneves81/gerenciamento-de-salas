@@ -130,36 +130,80 @@ const AdminPanel = () => {
 
   const loadData = async () => {
     try {
-      // Carregar usuários
-      const usersResponse = await api.get('/admin/users');
-      setUsers(usersResponse.data);
+      // Por enquanto, usar dados mock até as APIs estarem completas
+      const mockUsers = [
+        {
+          id: 1,
+          nome: 'Admin Sistema',
+          email: 'admin@salafacil.com',
+          telefone: '(45) 99999-9999',
+          role: 'admin',
+          status: 'active',
+          department_id: 1,
+          manager_id: null
+        },
+        {
+          id: 2,
+          nome: 'Usuário Teste',
+          email: 'usuario@salafacil.com',
+          telefone: '(45) 88888-8888',
+          role: 'user',
+          status: 'active',
+          department_id: 1,
+          manager_id: 1
+        }
+      ];
 
-      // Carregar departamentos
-      const deptsResponse = await api.get('/admin/departments');
-      setDepartments(deptsResponse.data);
+      const mockDepartments = [
+        {
+          id: 1,
+          name: 'Administração',
+          description: 'Departamento Administrativo',
+          parent_id: null
+        },
+        {
+          id: 2,
+          name: 'TI',
+          description: 'Tecnologia da Informação',
+          parent_id: 1
+        }
+      ];
+
+      setUsers(mockUsers);
+      setDepartments(mockDepartments);
 
       // Calcular estatísticas
-      const totalUsers = usersResponse.data.length;
-      const activeUsers = usersResponse.data.filter(u => u.status === 'active').length;
-      const blockedUsers = usersResponse.data.filter(u => u.status === 'blocked').length;
+      const totalUsers = mockUsers.length;
+      const activeUsers = mockUsers.filter(u => u.status === 'active').length;
+      const blockedUsers = mockUsers.filter(u => u.status === 'blocked').length;
       
       setStats({
         totalUsers,
         activeUsers,
         blockedUsers,
-        totalDepartments: deptsResponse.data.length
+        totalDepartments: mockDepartments.length
       });
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
+      // Fallback para dados vazios
+      setUsers([]);
+      setDepartments([]);
+      setStats({
+        totalUsers: 0,
+        activeUsers: 0,
+        blockedUsers: 0,
+        totalDepartments: 0
+      });
     }
   };
 
   const handleCreateUser = async () => {
     try {
-      await api.post('/admin/users', userForm);
+      // Simulação de criação - em produção usaria: await api.post('/admin/users', userForm);
+      alert(`Usuário "${userForm.nome}" seria criado com email "${userForm.email}"`);
       setOpenUserDialog(false);
       setUserForm({ nome: '', email: '', telefone: '', role: 'user', department_id: '', manager_id: '' });
-      loadData();
+      // loadData(); // Desabilitado temporariamente
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
     }
@@ -167,11 +211,12 @@ const AdminPanel = () => {
 
   const handleUpdateUser = async () => {
     try {
-      await api.put(`/admin/users/${selectedUser.id}`, userForm);
+      // Simulação de atualização - em produção usaria: await api.put(`/admin/users/${selectedUser.id}`, userForm);
+      alert(`Usuário "${userForm.nome}" seria atualizado`);
       setOpenUserDialog(false);
       setSelectedUser(null);
       setUserForm({ nome: '', email: '', telefone: '', role: 'user', department_id: '', manager_id: '' });
-      loadData();
+      // loadData(); // Desabilitado temporariamente
     } catch (error) {
       console.error('Erro ao atualizar usuário:', error);
     }
@@ -179,9 +224,10 @@ const AdminPanel = () => {
 
   const handleBlockUser = async (userId, currentStatus) => {
     try {
+      // Simulação de bloqueio - em produção usaria: await api.patch(`/admin/users/${userId}/status`, { status: newStatus });
       const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
-      await api.patch(`/admin/users/${userId}/status`, { status: newStatus });
-      loadData();
+      alert(`Usuário seria ${newStatus === 'blocked' ? 'bloqueado' : 'desbloqueado'}`);
+      // loadData(); // Desabilitado temporariamente
     } catch (error) {
       console.error('Erro ao alterar status:', error);
     }
@@ -190,8 +236,9 @@ const AdminPanel = () => {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Tem certeza que deseja deletar este usuário?')) {
       try {
-        await api.delete(`/admin/users/${userId}`);
-        loadData();
+        // Simulação de exclusão - em produção usaria: await api.delete(`/admin/users/${userId}`);
+        alert('Usuário seria deletado');
+        // loadData(); // Desabilitado temporariamente
       } catch (error) {
         console.error('Erro ao deletar usuário:', error);
       }
@@ -200,7 +247,8 @@ const AdminPanel = () => {
 
   const handleSendNotification = async () => {
     try {
-      await api.post('/admin/notifications', notificationForm);
+      // Simulação de notificação - em produção usaria: await api.post('/admin/notifications', notificationForm);
+      alert(`Notificação "${notificationForm.title}" seria enviada`);
       setOpenNotificationDialog(false);
       setNotificationForm({ title: '', message: '', recipient_id: '', type: 'admin_message' });
     } catch (error) {
@@ -210,10 +258,11 @@ const AdminPanel = () => {
 
   const handleCreateDepartment = async () => {
     try {
-      await api.post('/admin/departments', departmentForm);
+      // Simulação de criação de departamento - em produção usaria: await api.post('/admin/departments', departmentForm);
+      alert(`Departamento "${departmentForm.name}" seria criado`);
       setOpenDepartmentDialog(false);
       setDepartmentForm({ name: '', description: '', parent_id: '' });
-      loadData();
+      // loadData(); // Desabilitado temporariamente
     } catch (error) {
       console.error('Erro ao criar departamento:', error);
     }
