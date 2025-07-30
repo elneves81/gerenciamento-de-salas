@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [token, setToken] = useSafeLocalStorage('token', null);
   const [refreshToken, setRefreshToken] = useSafeLocalStorage('refreshToken', null);
+  const [isFirstLogin, setIsFirstLogin] = useSafeLocalStorage('isFirstLogin', true);
   const abortControllerRef = useRef(null);
 
   // Limpar dados corrompidos na inicialização
@@ -28,6 +29,21 @@ export const AuthProvider = ({ children }) => {
       console.log('localStorage corrompido foi limpo na inicialização');
     }
   }, []);
+
+  // Verificar se usuário é administrador
+  const isAdmin = useMemo(() => {
+    return user?.role === 'admin';
+  }, [user?.role]);
+
+  // Verificar se usuário pode gerenciar outros usuários
+  const canManageUsers = useMemo(() => {
+    return isAdmin;
+  }, [isAdmin]);
+
+  // Verificar se usuário pode acessar painel admin
+  const canAccessAdminPanel = useMemo(() => {
+    return isAdmin;
+  }, [isAdmin]);
 
   // Configurar header de autorização
   const setAuthHeader = useCallback((authToken) => {
@@ -221,6 +237,11 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  // Marcar primeiro login como concluído
+  const completeFirstLogin = useCallback(() => {
+    setIsFirstLogin(false);
+  }, [setIsFirstLogin]);
+
   // Memoizar o valor do contexto
   const contextValue = useMemo(() => ({
     user,
@@ -231,8 +252,21 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     isAuthenticated: !!user && !!token,
-    refreshUser: loadUser
-  }), [user, login, register, loginWithGoogle, logout, loading, error, token, loadUser]);
+    refreshUser: loadUser,
+    
+    // Funcionalidades de admin
+    isAdmin,
+    canManageUsers,
+    canAccessAdminPanel,
+    
+    // Primeiro login
+    isFirstLogin,
+    completeFirstLogin
+  }), [
+    user, login, register, loginWithGoogle, logout, loading, error, token, loadUser,
+    isAdmin, canManageUsers, canAccessAdminPanel,
+    isFirstLogin, completeFirstLogin
+  ]);
 
   return (
     <AuthContext.Provider value={contextValue}>
