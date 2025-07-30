@@ -81,7 +81,8 @@ import {
   Assessment,
   Logout,
   History,
-  Lightbulb
+  Lightbulb,
+  Room
 } from '@mui/icons-material';
 import { format, isToday, isTomorrow, parseISO, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -695,14 +696,28 @@ const DashboardPremium = () => {
               '& .MuiTab-root': {
                 minWidth: isMobile ? 120 : 'auto',
                 fontSize: isMobile ? '0.8rem' : '0.875rem',
-                padding: isMobile ? '6px 12px' : '12px 16px'
+                padding: isMobile ? '6px 12px' : '12px 16px',
+                fontWeight: 'bold'
               }
             }}
           >
             <Tab 
-              label={isMobile ? "Geral" : "Visão Geral"}
+              label={isMobile ? "Dashboard" : "Visão Geral"}
               icon={<DashboardIcon />} 
               iconPosition={isMobile ? "top" : "start"}
+            />
+            <Tab 
+              label={isMobile ? "Calendário" : "📅 Calendário de Reuniões"} 
+              icon={<CalendarToday />} 
+              iconPosition={isMobile ? "top" : "start"}
+              sx={{ 
+                backgroundColor: activeTab === 1 ? 'primary.light' : 'transparent',
+                color: activeTab === 1 ? 'primary.contrastText' : 'inherit',
+                '&:hover': {
+                  backgroundColor: 'primary.light',
+                  color: 'primary.contrastText'
+                }
+              }}
             />
             <Tab 
               label="Análises" 
@@ -712,11 +727,6 @@ const DashboardPremium = () => {
             <Tab 
               label="Relatórios" 
               icon={<BarChart />} 
-              iconPosition={isMobile ? "top" : "start"}
-            />
-            <Tab 
-              label="Calendário" 
-              icon={<CalendarToday />} 
               iconPosition={isMobile ? "top" : "start"}
             />
             <Tab 
@@ -1124,7 +1134,7 @@ const DashboardPremium = () => {
         )}
 
         {/* Tab de Análises */}
-        {activeTab === 1 && (
+        {activeTab === 2 && (
           <Grid container spacing={3}>
             {/* Gráfico de Ocupação por Dia */}
             <Grid item xs={12} lg={8}>
@@ -1302,7 +1312,7 @@ const DashboardPremium = () => {
         )}
 
         {/* Tab de Relatórios */}
-        {activeTab === 2 && (
+        {activeTab === 3 && (
           <Grid container spacing={3}>
             {/* Controles de Filtro */}
             <Grid item xs={12}>
@@ -1654,14 +1664,82 @@ const DashboardPremium = () => {
           </Grid>
         )}
 
-        {/* Tab de Calendário */}
-        {activeTab === 3 && (
-          <Box sx={{ mt: 2, height: { xs: 'auto', md: '70vh' } }}>
-            <GoogleCalendarResponsive 
-              reservas={allReservas} 
-              salas={salas} 
-              onNovaReserva={loadAllData}
-            />
+        {/* Tab de Calendário - Aba Principal de Reuniões */}
+        {activeTab === 1 && (
+          <Box sx={{ mt: 2 }}>
+            {/* Header do Calendário */}
+            <Paper elevation={3} sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white' }}>
+              <Box display="flex" alignItems="center" justifyContent="between" flexWrap="wrap" gap={2}>
+                <Box>
+                  <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    📅 Calendário de Reuniões
+                  </Typography>
+                  <Typography variant="h6" sx={{ opacity: 0.9 }}>
+                    Visualize e gerencie todas as reservas de salas
+                  </Typography>
+                </Box>
+                <Box display="flex" gap={2} flexWrap="wrap">
+                  <Chip 
+                    icon={<EventAvailable />}
+                    label={`${allReservas.length} Reservas Total`}
+                    sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 'bold' }}
+                  />
+                  <Chip 
+                    icon={<Room />}
+                    label={`${salas.length} Salas Disponíveis`}
+                    sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 'bold' }}
+                  />
+                </Box>
+              </Box>
+            </Paper>
+
+            {/* Calendário em Tela Cheia */}
+            <Paper elevation={3} sx={{ p: 0, borderRadius: 2, overflow: 'hidden' }}>
+              <Box sx={{ height: { xs: '600px', md: '75vh' }, minHeight: '500px' }}>
+                <GoogleCalendarResponsive 
+                  reservas={allReservas} 
+                  salas={salas} 
+                  onNovaReserva={loadAllData}
+                />
+              </Box>
+            </Paper>
+
+            {/* Quick Stats abaixo do Calendário */}
+            <Grid container spacing={2} sx={{ mt: 2 }}>
+              <Grid item xs={12} sm={4}>
+                <Paper elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'white' }}>
+                  <EventAvailable sx={{ fontSize: 40, mb: 1 }} />
+                  <Typography variant="h5" fontWeight="bold">
+                    {proximasReservas.length}
+                  </Typography>
+                  <Typography variant="body2">
+                    Próximas Reuniões
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Paper elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light', color: 'white' }}>
+                  <Room sx={{ fontSize: 40, mb: 1 }} />
+                  <Typography variant="h5" fontWeight="bold">
+                    {salas.length}
+                  </Typography>
+                  <Typography variant="body2">
+                    Salas Disponíveis
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Paper elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light', color: 'white' }}>
+                  <Today sx={{ fontSize: 40, mb: 1 }} />
+                  <Typography variant="h5" fontWeight="bold">
+                    {reservasHoje.length}
+                  </Typography>
+                  <Typography variant="body2">
+                    Reuniões Hoje
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
           </Box>
         )}
 
