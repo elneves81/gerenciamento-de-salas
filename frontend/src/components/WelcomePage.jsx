@@ -43,44 +43,6 @@ const WelcomePage = ({ onContinue }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const checkAdminStatus = async () => {
-    try {
-      console.log('🔍 Verificando status do admin...');
-      const response = await fetch('/.netlify/functions/check-admin-status', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('📊 Status do admin recebido:', data);
-        setAdminStatus(data);
-      } else {
-        console.error('❌ Erro na resposta da API:', response.status);
-      }
-    } catch (error) {
-      console.error('Erro ao verificar status do admin:', error);
-      // Em caso de erro, assumir que precisa configurar
-      setAdminStatus({ hasAdmin: false, needsSetup: true });
-    }
-  };
-
-  const handleSuperAdminSuccess = () => {
-    setShowCreateSuperAdmin(false);
-    checkAdminStatus(); // Recarregar status
-    // Opcional: mostrar mensagem de sucesso ou redirecionar para login
-  };
-
-  useEffect(() => {
-    setShowContent(true);
-    const timer = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % 3);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
-
   const welcomePhrases = [
     {
       title: "Bem-vindo ao SalaFácil! 🎉",
@@ -179,7 +141,8 @@ const WelcomePage = ({ onContinue }) => {
 
             {/* Alerta para criar Super Admin se necessário */}
             {console.log('🎯 Admin Status atual:', adminStatus)}
-            {adminStatus?.needsSetup && (
+            {/* TEMP: Forçar exibição do botão para teste */}
+            {(adminStatus?.needsSetup || true) && (
               <Slide direction="down" in={showContent} timeout={600}>
                 <Alert 
                   severity="warning" 
