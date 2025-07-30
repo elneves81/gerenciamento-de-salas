@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { useMediaQuery } from '@mui/material';
 import {
   Box,
   Grid,
@@ -124,6 +125,9 @@ const DashboardPremium = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [allReservas, setAllReservas] = useState([]);
+  
+  // Responsividade
+  const isMobile = useMediaQuery('(max-width:768px)');
   
   // Estados para análises e relatórios
   const [analytics, setAnalytics] = useState({
