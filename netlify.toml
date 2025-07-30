@@ -1,8 +1,7 @@
 # Netlify Configuration - Ultra Simples  
 [build]
-  base = "frontend"
-  command = "rm -rf dist node_modules && npm ci && npm run build"
-  publish = "dist"
+  command = "cd frontend && rm -rf dist node_modules && npm ci && npm run build"
+  publish = "frontend/dist"
 
 [build.environment]
   NODE_VERSION = "18"
