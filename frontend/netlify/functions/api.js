@@ -33,20 +33,41 @@ exports.handler = async (event, context) => {
     const { httpMethod, path, body } = event;
     const requestBody = body ? JSON.parse(body) : {};
 
-    // Roteamento das APIs
-    if (path.includes('/api/admin/users')) {
+    // Log para debug
+    console.log('Path recebido:', path);
+    console.log('Method:', httpMethod);
+
+    // Roteamento das APIs - usando includes para capturar variações do path
+    if (path.includes('admin/users') || path.includes('/api/admin/users')) {
       return await handleUsers(httpMethod, path, requestBody);
-    } else if (path.includes('/api/admin/departments')) {
+    } else if (path.includes('admin/departments') || path.includes('/api/admin/departments')) {
       return await handleDepartments(httpMethod, path, requestBody);
-    } else if (path.includes('/api/admin/stats')) {
+    } else if (path.includes('admin/stats') || path.includes('/api/admin/stats')) {
       return await handleStats(httpMethod);
-    } else if (path.includes('/api/database/setup')) {
+    } else if (path.includes('database/setup') || path.includes('/api/database/setup')) {
       return await handleDatabaseSetup(httpMethod, requestBody);
-    } else if (path.includes('/api/database/sync-user')) {
+    } else if (path.includes('database/sync-user') || path.includes('/api/database/sync-user')) {
       return await handleSyncUser(httpMethod, requestBody);
-    } else if (path.includes('/api/database/check-admin')) {
+    } else if (path.includes('database/check-admin') || path.includes('/api/database/check-admin')) {
       return await handleCheckAdmin(httpMethod, requestBody);
     }
+
+    // Endpoint de teste/debug
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({ 
+        message: 'API funcionando!',
+        path: path,
+        method: httpMethod,
+        available_endpoints: [
+          '/api/admin/users',
+          '/api/admin/departments', 
+          '/api/admin/stats',
+          '/api/database/setup'
+        ]
+      })
+    };
 
     return {
       statusCode: 404,
