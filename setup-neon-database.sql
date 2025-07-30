@@ -69,6 +69,57 @@ INSERT INTO agendamento_agendamento (titulo, descricao, data_inicio, data_fim, s
      NOW() + INTERVAL '3 days', NOW() + INTERVAL '3 days 4 hours', 4, 1)
 ON CONFLICT DO NOTHING;
 
+-- ========================================
+-- TABELAS DO SISTEMA DE CHAT E NOTIFICAÇÕES
+-- ========================================
+
+-- Criar tabela de conversas
+CREATE TABLE IF NOT EXISTS conversations (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    type VARCHAR(50) DEFAULT 'private',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Criar tabela de participantes das conversas
+CREATE TABLE IF NOT EXISTS conversation_participants (
+    id SERIAL PRIMARY KEY,
+    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES auth_user(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE(conversation_id, user_id)
+);
+
+-- Criar tabela de mensagens
+CREATE TABLE IF NOT EXISTS messages (
+    id SERIAL PRIMARY KEY,
+    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    sender_id INTEGER NOT NULL REFERENCES auth_user(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Criar tabela de notificações
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES auth_user(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    message TEXT,
+    type VARCHAR(50) DEFAULT 'info',
+    read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Índices para performance do chat
+CREATE INDEX IF NOT EXISTS idx_conversations_updated_at ON conversations(updated_at);
+CREATE INDEX IF NOT EXISTS idx_conversation_participants_user ON conversation_participants(user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
+
 -- Verificar se tudo foi criado corretamente
 SELECT 'Usuários:' as tabela, COUNT(*) as total FROM auth_user
 UNION ALL

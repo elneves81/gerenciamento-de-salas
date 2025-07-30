@@ -22,15 +22,12 @@ NODE_VERSION=18
 REACT_APP_FRONTEND_URL=https://your-app.netlify.app
 
 # ========================================
-# BACKEND ENVIRONMENT VARIABLES
-# (Para Railway/Heroku/Render)
+# NETLIFY FUNCTIONS (BACKEND NO NETLIFY)
 # ========================================
 
-# === DJANGO SETTINGS ===
-DEBUG=False
-SECRET_KEY=sua-chave-super-secreta-de-producao
-ALLOWED_HOSTS=your-app.up.railway.app,*.herokuapp.com
-CORS_ALLOWED_ORIGINS=https://your-app.netlify.app
+# === CONFIGURAÇÃO NO NETLIFY DASHBOARD ===
+# Site Settings > Environment Variables
+# Adicione TODAS essas variáveis:
 
 # === DATABASE ===
 # Para Neon PostgreSQL
@@ -54,23 +51,20 @@ DEFAULT_FROM_EMAIL=SalaFácil <noreply@salafacil.com>
 FRONTEND_URL=https://your-app.netlify.app
 
 # ========================================
-# PASSOS PARA DEPLOY COMPLETO
+# PASSOS PARA DEPLOY COMPLETO - NETLIFY ONLY
 # ========================================
 
-# FRONTEND (NETLIFY):
+# FRONTEND + BACKEND (NETLIFY):
 # 1. Conecte o repositório GitHub ao Netlify
-# 2. Configure as variáveis de ambiente acima
+# 2. Configure as variáveis de ambiente acima no Netlify Dashboard
 # 3. Deploy automático acontecerá
-
-# BACKEND (RAILWAY):
-# 1. Conecte o repositório ao Railway
-# 2. Configure as variáveis de ambiente
-# 3. Certifique-se que a pasta 'backend' é o diretório raiz
+# 4. Backend será servido via Netlify Functions (/.netlify/functions/)
 
 # BANCO DE DADOS (NEON):
 # 1. Crie conta em neon.tech
 # 2. Crie um novo projeto PostgreSQL
 # 3. Copie a connection string para DATABASE_URL
+# 4. Execute o SQL do arquivo setup-neon-database.sql
 
 # EMAIL (GMAIL):
 # 1. Ative autenticação de 2 fatores
@@ -88,10 +82,10 @@ FRONTEND_URL=https://your-app.netlify.app
 # 5. Teste push notifications (precisa de HTTPS)
 
 # ========================================
-# URLs FINAIS DO SISTEMA
+# URLs FINAIS DO SISTEMA - NETLIFY ONLY
 # ========================================
 
 # Frontend: https://your-app.netlify.app
-# Backend API: https://your-app.up.railway.app/api/
-# Django Admin: https://your-app.up.railway.app/admin/
-# Chat APIs: https://your-app.up.railway.app/api/chat/
+# Backend API: https://your-app.netlify.app/.netlify/functions/
+# Chat APIs: https://your-app.netlify.app/.netlify/functions/chat-messages
+# Agendamentos: https://your-app.netlify.app/.netlify/functions/agendamentos
