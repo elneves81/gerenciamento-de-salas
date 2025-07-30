@@ -113,6 +113,48 @@ exports.handler = async (event, context) => {
       };
     }
 
+    if (event.httpMethod === 'DELETE') {
+      // Deletar notificação
+      const pathParts = event.path.split('/');
+      const notificationId = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2];
+      
+      console.log('🗑️ Deletando notificação ID:', notificationId);
+      
+      if (!notificationId || notificationId === 'notifications') {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'ID da notificação é obrigatório' })
+        };
+      }
+
+      const result = await client.query(`
+        DELETE FROM notifications 
+        WHERE id = $1
+        RETURNING id
+      `, [notificationId]);
+
+      if (result.rows.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: 'Notificação não encontrada' })
+        };
+      }
+
+      console.log('✅ Notificação deletada:', notificationId);
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ 
+          success: true, 
+          message: 'Notificação deletada com sucesso',
+          deleted_id: notificationId 
+        })
+      };
+    }
+
     return {
       statusCode: 405,
       headers,

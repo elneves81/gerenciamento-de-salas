@@ -250,13 +250,19 @@ export const NotificationProvider = ({ children }) => {
 
   const deleteNotification = async (notificationId) => {
     try {
-      // Por enquanto, API não tem DELETE implementado
-      // Vamos marcar como lida ao invés de deletar
-      console.log('🔍 Marcando notificação como lida ao invés de deletar:', notificationId);
-      await api.put(`/notifications/${notificationId}/`);
+      console.log('🗑️ Deletando notificação:', notificationId);
+      const response = await api.delete(`/notifications/${notificationId}/`);
+      console.log('✅ Notificação deletada com sucesso:', response.data);
       await loadNotifications();
     } catch (error) {
-      console.error('Erro ao deletar notificação:', error);
+      console.error('❌ Erro ao deletar notificação:', error);
+      
+      // Fallback: se DELETE falhar, marcar como lida
+      if (error.response?.status === 405 || error.response?.status === 404) {
+        console.log('� Fallback: marcando como lida ao invés de deletar');
+        await api.put(`/notifications/${notificationId}/`);
+        await loadNotifications();
+      }
     }
   };
 
