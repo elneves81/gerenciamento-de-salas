@@ -1,96 +1,41 @@
-# Netlify Configuration - SalaFácil com Chat e Notificações
+# Netlify Configuration - SalaFácil
 [build]
   base = "frontend"
-  command = "npm install --prefix .. && npm install --prefix ../netlify/functions && npm install && npm run build"
+  command = "npm ci && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18"
-  # Variáveis para o sistema de chat
-  REACT_APP_API_URL = "https://your-backend-url.herokuapp.com"
-  REACT_APP_VAPID_PUBLIC_KEY = "your-vapid-public-key-here"
 
-# Netlify Functions (Backend)
+# Netlify Functions
 [functions]
   directory = "../netlify/functions"
+  node_bundler = "esbuild"
 
-# Variáveis de ambiente para desenvolvimento local
-[context.development.environment]
-  DATABASE_URL = "sua-connection-string-neon-aqui"
-  JWT_SECRET = "sua-chave-jwt-super-secreta-aqui"
-  VAPID_PRIVATE_KEY = "sua-vapid-private-key"
-  VAPID_PUBLIC_KEY = "sua-vapid-public-key"
-  EMAIL_HOST_USER = "seu-email@gmail.com"
-  EMAIL_HOST_PASSWORD = "sua-senha-de-app"
-
-# Variáveis de ambiente para produção (configurar no Netlify Dashboard)
-# [context.production.environment]
-  # NODE_ENV removido para permitir devDependencies no build
-
-# Redirects for SPA
+# SPA Redirect - DEVE SER O ÚLTIMO
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
 
-# API redirects
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
-
-# Headers for security and PWA support
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-
-# Headers for CSS files
-[[headers]]
-  for = "*.css"
-  [headers.values]
-    Content-Type = "text/css"
-    Cache-Control = "public, max-age=31536000"
-
-# Headers for JS files
+# Force correct MIME types
 [[headers]]
   for = "*.js"
   [headers.values]
-    Content-Type = "application/javascript"
-    Cache-Control = "public, max-age=31536000"
+    Content-Type = "application/javascript; charset=utf-8"
 
-# Headers for assets
 [[headers]]
-  for = "/assets/*"
+  for = "*.css"  
   [headers.values]
-    Cache-Control = "public, max-age=31536000"
+    Content-Type = "text/css; charset=utf-8"
 
-# Service Worker headers for PWA
 [[headers]]
-  for = "/sw.js"
+  for = "/assets/*.js"
   [headers.values]
-    Cache-Control = "no-cache"
-    Service-Worker-Allowed = "/"
+    Content-Type = "application/javascript; charset=utf-8"
 
-# Manifest file for PWA
 [[headers]]
-  for = "/manifest.json"
+  for = "/assets/*.css"
   [headers.values]
-    Content-Type = "application/manifest+json"
-
-# Cache static assets
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# CORS for API
-[[headers]]
-  for = "/.netlify/functions/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    Content-Type = "text/css; charset=utf-8"
