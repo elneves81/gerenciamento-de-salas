@@ -117,6 +117,158 @@ const ReservasModerno = () => {
     }
   };
 
+  const visualizarReserva = (reserva) => {
+    // Criar modal de visualização
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal-content reserva-details">
+        <div class="modal-header">
+          <h3><Calendar size={20} /> Detalhes da Reserva</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-item">
+            <strong>Título:</strong> ${reserva.titulo || 'Sem título'}
+          </div>
+          <div class="detail-item">
+            <strong>Sala:</strong> ${reserva.sala || 'Não informado'}
+          </div>
+          <div class="detail-item">
+            <strong>Solicitante:</strong> ${reserva.solicitante || 'Não informado'}
+          </div>
+          <div class="detail-item">
+            <strong>Data/Hora Início:</strong> ${new Date(reserva.data_inicio).toLocaleString('pt-BR')}
+          </div>
+          <div class="detail-item">
+            <strong>Data/Hora Fim:</strong> ${new Date(reserva.data_fim).toLocaleString('pt-BR')}
+          </div>
+          <div class="detail-item">
+            <strong>Status:</strong> 
+            <span class="status-badge status-${reserva.status}">
+              ${reserva.status === 'agendada' ? 'Agendada' : 
+                reserva.status === 'em_andamento' ? 'Em Andamento' : 
+                reserva.status === 'concluida' ? 'Concluída' : 'Cancelada'}
+            </span>
+          </div>
+          ${reserva.descricao ? `
+            <div class="detail-item">
+              <strong>Descrição:</strong> ${reserva.descricao}
+            </div>
+          ` : ''}
+          <div class="detail-item">
+            <strong>Participantes:</strong> ${reserva.participantes || 1}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-moderno btn-secondary modal-close">Fechar</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Adicionar event listeners para fechar
+    modal.querySelectorAll('.modal-close').forEach(btn => {
+      btn.onclick = () => modal.remove();
+    });
+    
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.remove();
+    };
+  };
+
+  const editarReserva = (reserva) => {
+    // Criar modal de edição
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal-content edit-reserva">
+        <div class="modal-header">
+          <h3><Edit3 size={20} /> Editar Reserva</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <form class="modal-body" id="editForm">
+          <div class="form-group">
+            <label>Título:</label>
+            <input type="text" name="titulo" value="${reserva.titulo || ''}" required>
+          </div>
+          <div class="form-group">
+            <label>Descrição:</label>
+            <textarea name="descricao" rows="3">${reserva.descricao || ''}</textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Data Início:</label>
+              <input type="datetime-local" name="data_inicio" 
+                     value="${reserva.data_inicio?.slice(0, 16)}" required>
+            </div>
+            <div class="form-group">
+              <label>Data Fim:</label>
+              <input type="datetime-local" name="data_fim" 
+                     value="${reserva.data_fim?.slice(0, 16)}" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Participantes:</label>
+            <input type="number" name="participantes" value="${reserva.participantes || 1}" min="1">
+          </div>
+        </form>
+        <div class="modal-footer">
+          <button class="btn-moderno btn-secondary modal-close">Cancelar</button>
+          <button class="btn-moderno btn-primary" id="saveEdit">Salvar Alterações</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Adicionar event listeners
+    modal.querySelectorAll('.modal-close').forEach(btn => {
+      btn.onclick = () => modal.remove();
+    });
+    
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.remove();
+    };
+    
+    // Salvar edição
+    document.getElementById('saveEdit').onclick = async () => {
+      const form = document.getElementById('editForm');
+      const formData = new FormData(form);
+      
+      try {
+        const dadosAtualizados = {
+          titulo: formData.get('titulo'),
+          descricao: formData.get('descricao'),
+          data_inicio: formData.get('data_inicio'),
+          data_fim: formData.get('data_fim'),
+          participantes: parseInt(formData.get('participantes'))
+        };
+        
+        await api.put(`/agendamentos/${reserva.id}/`, dadosAtualizados);
+        
+        const toast = document.createElement('div');
+        toast.className = 'toast-success';
+        toast.innerHTML = '✅ Reserva atualizada com sucesso!';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+        
+        modal.remove();
+        loadReservas(); // Recarregar lista
+        
+      } catch (error) {
+        console.error('Erro ao atualizar reserva:', error);
+        
+        const toast = document.createElement('div');
+        toast.className = 'toast-error';
+        toast.innerHTML = '❌ Erro ao atualizar reserva. Tente novamente.';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
+    };
+  };
+
   const reservasFiltradas = useMemo(() => {
     let resultado = [...reservas];
 
@@ -852,6 +1004,7 @@ const ReservasModerno = () => {
                   <button
                     className="btn-icon btn-primary"
                     title="Visualizar"
+                    onClick={() => visualizarReserva(reserva)}
                     style={{ background: 'linear-gradient(45deg, #4299e1, #3182ce)' }}
                   >
                     <Eye size={16} />
@@ -859,6 +1012,7 @@ const ReservasModerno = () => {
                   <button
                     className="btn-icon btn-success"
                     title="Editar"
+                    onClick={() => editarReserva(reserva)}
                     style={{ background: 'linear-gradient(45deg, #48bb78, #38a169)' }}
                   >
                     <Edit3 size={16} />

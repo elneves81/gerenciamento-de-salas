@@ -26,7 +26,15 @@ import {
   Snackbar,
   Tooltip,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  useMediaQuery,
+  Tabs,
+  Tab,
+  Divider,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import {
   Add,
@@ -37,13 +45,21 @@ import {
   Save,
   Cancel,
   Visibility,
-  VisibilityOff
+  VisibilityOff,
+  LocationOn,
+  Business,
+  Settings,
+  People
 } from '@mui/icons-material';
 import api from '../services/api';
+import GerenciarLocalizacoes from '../components/GerenciarLocalizacoes';
 
 const GerenciarSalas = () => {
   const navigate = useNavigate();
+  const isMobile = useMediaQuery('(max-width:768px)');
+  const [activeTab, setActiveTab] = useState(0);
   const [salas, setSalas] = useState([]);
+  const [localizacoes, setLocalizacoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -54,11 +70,13 @@ const GerenciarSalas = () => {
     nome: '',
     capacidade: '',
     descricao: '',
+    localizacao_id: '',
     ativa: true
   });
 
   useEffect(() => {
     loadSalas();
+    loadLocalizacoes();
   }, []);
 
   const loadSalas = async () => {
@@ -76,6 +94,17 @@ const GerenciarSalas = () => {
     }
   };
 
+  const loadLocalizacoes = async () => {
+    try {
+      const response = await api.get('/localizacoes');
+      const localizacoesData = Array.isArray(response.data) ? response.data : response.data?.results || [];
+      setLocalizacoes(localizacoesData);
+    } catch (err) {
+      console.error('Erro ao carregar localizações:', err);
+      // Não mostrar erro se as localizações falharem
+    }
+  };
+
   const handleOpenDialog = (sala = null) => {
     if (sala) {
       setEditingSala(sala);
@@ -83,6 +112,7 @@ const GerenciarSalas = () => {
         nome: sala.nome || '',
         capacidade: sala.capacidade || '',
         descricao: sala.descricao || '',
+        localizacao_id: sala.localizacao_id || '',
         ativa: sala.ativa !== false
       });
     } else {
@@ -91,6 +121,7 @@ const GerenciarSalas = () => {
         nome: '',
         capacidade: '',
         descricao: '',
+        localizacao_id: '',
         ativa: true
       });
     }
@@ -104,6 +135,7 @@ const GerenciarSalas = () => {
       nome: '',
       capacidade: '',
       descricao: '',
+      localizacao_id: '',
       ativa: true
     });
   };
@@ -119,6 +151,7 @@ const GerenciarSalas = () => {
         nome: formData.nome.trim(),
         capacidade: parseInt(formData.capacidade) || 0,
         descricao: formData.descricao.trim(),
+        localizacao_id: formData.localizacao_id || null,
         ativa: formData.ativa
       };
 
