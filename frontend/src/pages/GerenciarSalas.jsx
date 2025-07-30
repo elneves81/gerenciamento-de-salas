@@ -389,14 +389,15 @@ const GerenciarSalas = () => {
                           <TableCell>
                             <Box display="flex" alignItems="center" gap={1}>
                               <Chip 
-                                label={sala.ativa !== false ? 'Ativa' : 'Inativa'}
-                                color={sala.ativa !== false ? 'success' : 'error'}
+                                label={sala.ativa ? 'Ativa' : 'Inativa'}
+                                color={sala.ativa ? 'success' : 'error'}
                                 size="small"
                               />
                               <Switch
-                                checked={sala.ativa !== false}
+                                checked={Boolean(sala.ativa)}
                                 onChange={() => handleToggleAtiva(sala)}
                                 size="small"
+                                color="primary"
                               />
                             </Box>
                           </TableCell>
@@ -500,14 +501,15 @@ const GerenciarSalas = () => {
                       <TableCell>
                         <Box display="flex" alignItems="center" gap={1}>
                           <Chip 
-                            label={sala.ativa !== false ? 'Ativa' : 'Inativa'}
-                            color={sala.ativa !== false ? 'success' : 'error'}
+                            label={sala.ativa ? 'Ativa' : 'Inativa'}
+                            color={sala.ativa ? 'success' : 'error'}
                             size="small"
                           />
                           <Switch
-                            checked={sala.ativa !== false}
+                            checked={Boolean(sala.ativa)}
                             onChange={() => handleToggleAtiva(sala)}
                             size="small"
+                            color="primary"
                           />
                         </Box>
                       </TableCell>

@@ -92,6 +92,7 @@ import SalaFacilLogo from '../components/SalaFacilLogo';
 import GraficosInterativosSimples from '../components/GraficosInterativosSimples';
 import RelatoriosAvancados from '../components/RelatoriosAvancados';
 import GoogleCalendarResponsive from '../components/GoogleCalendarResponsive';
+import CalendarioEstilizado from '../components/CalendarioEstilizado';
 import { useNotifications, useAutoNotifications } from '../components/NotificationSystem';
 import useReunioesAutoUpdate from '../hooks/useReunioesAutoUpdate';
 
@@ -1666,80 +1667,12 @@ const DashboardPremium = () => {
 
         {/* Tab de Calendário - Aba Principal de Reuniões */}
         {activeTab === 1 && (
-          <Box sx={{ mt: 2 }}>
-            {/* Header do Calendário */}
-            <Paper elevation={3} sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white' }}>
-              <Box display="flex" alignItems="center" justifyContent="between" flexWrap="wrap" gap={2}>
-                <Box>
-                  <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                    📅 Calendário de Reuniões
-                  </Typography>
-                  <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                    Visualize e gerencie todas as reservas de salas
-                  </Typography>
-                </Box>
-                <Box display="flex" gap={2} flexWrap="wrap">
-                  <Chip 
-                    icon={<EventAvailable />}
-                    label={`${allReservas.length} Reservas Total`}
-                    sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 'bold' }}
-                  />
-                  <Chip 
-                    icon={<Room />}
-                    label={`${salas.length} Salas Disponíveis`}
-                    sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 'bold' }}
-                  />
-                </Box>
-              </Box>
-            </Paper>
-
-            {/* Calendário em Tela Cheia */}
-            <Paper elevation={3} sx={{ p: 0, borderRadius: 2, overflow: 'hidden' }}>
-              <Box sx={{ height: { xs: '600px', md: '75vh' }, minHeight: '500px' }}>
-                <GoogleCalendarResponsive 
-                  reservas={allReservas} 
-                  salas={salas} 
-                  onNovaReserva={loadAllData}
-                />
-              </Box>
-            </Paper>
-
-            {/* Quick Stats abaixo do Calendário */}
-            <Grid container spacing={2} sx={{ mt: 2 }}>
-              <Grid item xs={12} sm={4}>
-                <Paper elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'white' }}>
-                  <EventAvailable sx={{ fontSize: 40, mb: 1 }} />
-                  <Typography variant="h5" fontWeight="bold">
-                    {proximasReservas.length}
-                  </Typography>
-                  <Typography variant="body2">
-                    Próximas Reuniões
-                  </Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Paper elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light', color: 'white' }}>
-                  <Room sx={{ fontSize: 40, mb: 1 }} />
-                  <Typography variant="h5" fontWeight="bold">
-                    {salas.length}
-                  </Typography>
-                  <Typography variant="body2">
-                    Salas Disponíveis
-                  </Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Paper elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light', color: 'white' }}>
-                  <Today sx={{ fontSize: 40, mb: 1 }} />
-                  <Typography variant="h5" fontWeight="bold">
-                    {reservasHoje.length}
-                  </Typography>
-                  <Typography variant="body2">
-                    Reuniões Hoje
-                  </Typography>
-                </Paper>
-              </Grid>
-            </Grid>
+          <Box sx={{ mt: 2, height: 'calc(100vh - 200px)' }}>
+            <CalendarioEstilizado 
+              reservas={allReservas} 
+              salas={salas} 
+              onNovaReserva={loadAllData}
+            />
           </Box>
         )}
 
