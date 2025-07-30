@@ -127,15 +127,22 @@ export const NotificationProvider = ({ children }) => {
 
   const loadNotifications = async () => {
     try {
+      // Debug: verificar estado do usuário
+      console.log('🔍 Debug loadNotifications - user:', user);
+      console.log('🔍 Debug loadNotifications - user.id:', user?.id);
+      
       // Verificar se o usuário está logado
       if (!user?.id) {
-        console.log('Usuário não está logado, pulando carregamento de notificações');
+        console.log('⚠️ Usuário não está logado, pulando carregamento de notificações');
         return;
       }
 
+      console.log('📡 Carregando notificações para user_id:', user.id);
       const response = await api.get('/notifications/', {
         params: { user_id: user.id }
       });
+      
+      console.log('✅ Resposta da API notificações:', response.data);
       const notifs = response.data || [];
       setNotifications(notifs);
       

@@ -24,14 +24,24 @@ exports.handler = async (event, context) => {
     if (event.httpMethod === 'GET') {
       // Buscar notificações do usuário
       const userId = event.queryStringParameters?.user_id;
+      
+      console.log('🔍 API Notifications - Parâmetros recebidos:', event.queryStringParameters);
+      console.log('🔍 API Notifications - user_id:', userId);
+      
       if (!userId) {
+        console.log('❌ user_id não fornecido');
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: 'user_id é obrigatório' })
+          body: JSON.stringify({ 
+            error: 'user_id é obrigatório',
+            received_params: event.queryStringParameters || {},
+            message: 'Envie: ?user_id=123'
+          })
         };
       }
 
+      console.log('📡 Buscando notificações para user_id:', userId);
       const result = await client.query(`
         SELECT id, title, message, type, read as is_read, created_at 
         FROM notifications 
@@ -42,6 +52,7 @@ exports.handler = async (event, context) => {
 
       // Garantir que sempre retorne um array
       const notifications = result.rows || [];
+      console.log('✅ Notificações encontradas:', notifications.length);
       
       return {
         statusCode: 200,
