@@ -227,8 +227,6 @@ const GoogleCalendarResponsive = ({ reservas = [], salas = [], onNovaReserva }) 
   const handleNovaReserva = (data = null) => {
     if (data) {
       const dataFormatada = data.toISOString().split('T')[0];
-      // Salvar no localStorage para usar na página de nova reserva
-      localStorage.setItem('preSelectedDate', dataFormatada);
       
       setNovaReserva(prev => ({
         ...prev,
@@ -236,26 +234,76 @@ const GoogleCalendarResponsive = ({ reservas = [], salas = [], onNovaReserva }) 
         data_fim: dataFormatada
       }));
       
-      // Navegar para página de nova reserva
-      window.location.href = '/nova-reserva';
-      return;
+      setSelectedDate(data);
     }
+    
+    // Sempre abrir o modal em vez de navegar
     setDialogReserva(true);
   };
 
-  const handleSalvarReserva = () => {
-    console.log('Nova reserva:', novaReserva);
-    setDialogReserva(false);
-    setNovaReserva({
-      titulo: '',
-      descricao: '',
-      sala: '',
-      data_inicio: '',
-      hora_inicio: '09:00',
-      data_fim: '',
-      hora_fim: '10:00',
-      participantes: 1
-    });
+  const handleSalvarReserva = async () => {
+    try {
+      // Validações básicas
+      if (!novaReserva.titulo || !novaReserva.sala || !novaReserva.data_inicio) {
+        alert('Por favor, preencha todos os campos obrigatórios');
+        return;
+      }
+
+      // Construir dados da reserva
+      const dataInicio = `${novaReserva.data_inicio}T${novaReserva.hora_inicio}:00`;
+      const dataFim = `${novaReserva.data_fim || novaReserva.data_inicio}T${novaReserva.hora_fim}:00`;
+
+      const reservaData = {
+        titulo: novaReserva.titulo,
+        descricao: novaReserva.descricao,
+        sala_id: parseInt(novaReserva.sala),
+        data_inicio: dataInicio,
+        data_fim: dataFim,
+        usuario_id: 1 // Será extraído do token JWT
+      };
+
+      // Enviar para API
+      const response = await fetch('/.netlify/functions/agendamentos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')?.replace(/"/g, '')}`
+        },
+        body: JSON.stringify(reservaData)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('Reserva criada com sucesso!');
+        
+        // Fechar modal e limpar form
+        setDialogReserva(false);
+        setNovaReserva({
+          titulo: '',
+          descricao: '',
+          sala: '',
+          data_inicio: '',
+          hora_inicio: '09:00',
+          data_fim: '',
+          hora_fim: '10:00',
+          participantes: 1
+        });
+
+        // Recarregar dados se há callback
+        if (onNovaReserva) {
+          onNovaReserva();
+        } else {
+          // Recarregar a página para atualizar o calendário
+          window.location.reload();
+        }
+      } else {
+        alert(result.error || 'Erro ao criar reserva');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar reserva:', error);
+      alert('Erro ao salvar reserva. Tente novamente.');
+    }
   };
 
   const getTituloHeader = () => {

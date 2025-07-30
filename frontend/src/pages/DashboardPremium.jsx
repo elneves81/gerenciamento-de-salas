@@ -1657,7 +1657,11 @@ const DashboardPremium = () => {
         {/* Tab de Calendário */}
         {activeTab === 3 && (
           <Box sx={{ mt: 2, height: { xs: 'auto', md: '70vh' } }}>
-            <GoogleCalendarResponsive reservas={allReservas} salas={salas} />
+            <GoogleCalendarResponsive 
+              reservas={allReservas} 
+              salas={salas} 
+              onNovaReserva={loadData}
+            />
           </Box>
         )}
 
