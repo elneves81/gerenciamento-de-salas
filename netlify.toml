@@ -1,11 +1,11 @@
 # Netlify Configuration - Ultra Simples  
 [build]
-  command = "cd frontend && rm -rf dist node_modules && npm ci && npm run build"
-  publish = "frontend/dist"
+  base = "frontend"
+  command = "rm -rf dist node_modules && npm ci && npm run build"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18"
-  NETLIFY_SKIP_CACHE = "true"
 
 # Functions usando bundler mais estável
 [functions]
