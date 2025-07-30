@@ -45,6 +45,13 @@ const WelcomePage = ({ onContinue }) => {
 
   const checkAdminStatus = async () => {
     try {
+      // TEMPORÁRIO: Simular que não há admin para mostrar botão
+      console.log('Simulando ausência de admin para mostrar painel');
+      setAdminStatus({ hasAdmin: false, needsSetup: true });
+      return;
+      
+      // Código original comentado enquanto functions estão com problema
+      /*
       const response = await fetch('/.netlify/functions/check-admin-status', {
         method: 'GET',
         headers: {
@@ -56,8 +63,11 @@ const WelcomePage = ({ onContinue }) => {
         const data = await response.json();
         setAdminStatus(data);
       }
+      */
     } catch (error) {
       console.error('Erro ao verificar status do admin:', error);
+      // Em caso de erro, assumir que precisa configurar
+      setAdminStatus({ hasAdmin: false, needsSetup: true });
     }
   };
 
