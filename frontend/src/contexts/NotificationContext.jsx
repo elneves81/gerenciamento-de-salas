@@ -138,10 +138,10 @@ export const NotificationProvider = ({ children }) => {
       }
 
       console.log('📡 Carregando notificações para user_id:', user.id);
-      console.log('🌐 URL da requisição:', `${api.defaults.baseURL}/chat/notifications/`);
+      console.log('🌐 URL da requisição:', `${api.defaults.baseURL}/notifications/`);
       console.log('🔑 Token presente:', localStorage.getItem('token') ? 'Sim' : 'Não');
       
-      const response = await api.get('/chat/notifications/', {
+      const response = await api.get('/notifications/', {
         params: { user_id: user.id }
       });
       
@@ -206,7 +206,7 @@ export const NotificationProvider = ({ children }) => {
 
   const markAsRead = async (notificationIds) => {
     try {
-      await api.post('/chat/notifications/mark_read/', {
+      await api.post('/notifications/mark_read/', {
         notification_ids: Array.isArray(notificationIds) ? notificationIds : [notificationIds]
       });
       await loadNotifications();
@@ -236,7 +236,7 @@ export const NotificationProvider = ({ children }) => {
 
   const deleteNotification = async (notificationId) => {
     try {
-      await api.delete(`/chat/notifications/${notificationId}/`);
+      await api.delete(`/notifications/${notificationId}/`);
       await loadNotifications();
     } catch (error) {
       console.error('Erro ao deletar notificação:', error);
