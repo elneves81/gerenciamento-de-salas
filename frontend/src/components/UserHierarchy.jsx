@@ -26,7 +26,7 @@ import {
 } from '@mui/material';
 import {
   Person,
-  Admin,
+  AdminPanelSettings,
   SupervisorAccount,
   Group,
   Add,
@@ -83,7 +83,7 @@ const UserHierarchy = () => {
   });
 
   const roles = {
-    admin: { label: 'Administrador', icon: <Admin />, color: 'error' },
+    admin: { label: 'Administrador', icon: <AdminPanelSettings />, color: 'error' },
     manager: { label: 'Gerente', icon: <SupervisorAccount />, color: 'warning' },
     user: { label: 'Usuário', icon: <Person />, color: 'primary' }
   };
