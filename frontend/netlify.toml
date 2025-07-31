@@ -20,6 +20,18 @@
   force = true
 
 [[redirects]]
+  from = "/google-auth"
+  to = "/.netlify/functions/admin-api"  
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/.netlify/functions/google-auth"
+  to = "/.netlify/functions/admin-api"  
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
