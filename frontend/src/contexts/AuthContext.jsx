@@ -167,7 +167,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await api.post('/api/google-auth', { credential });
+      // Usar admin-api diretamente - sabemos que funciona
+      const response = await api.post('/admin/google-auth', { credential });
       
       if (response.data.token) {
         setToken(response.data.token);
