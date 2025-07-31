@@ -1,5 +1,20 @@
 // Sistema SalaFacil - API Completa com dados mock profissionais
 // Funciona 100% sem dependências externas
+// Agora com integração opcional ao Neon Database
+
+let pool = null;
+
+// Tentar conectar ao Neon Database
+try {
+  const { Pool } = require('pg');
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_30vfdEapKsji@ep-polished-glitter-ad3ve5sr-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+    ssl: { rejectUnauthorized: false }
+  });
+  console.log('📊 Pool Neon Database inicializado');
+} catch (error) {
+  console.log('⚠️ Neon Database não disponível, usando sistema mock:', error.message);
+}
 
 // Dados mock realistas e profissionais
 const mockDatabase = {
@@ -245,6 +260,88 @@ exports.handler = async (event, context) => {
           statusCode: 201,
           headers: corsHeaders,
           body: JSON.stringify(newDept)
+        };
+      }
+    }
+
+    // TESTE DE CONEXÃO NEON DATABASE
+    if (path.includes('/test-neon') || path.includes('/neon-test')) {
+      if (!pool) {
+        return {
+          statusCode: 200,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            success: false,
+            message: '⚠️ Neon Database não configurado - usando sistema mock',
+            mode: 'mock',
+            mock_users: mockDatabase.users.length,
+            mock_departments: mockDatabase.departments.length,
+            timestamp: new Date().toISOString()
+          })
+        };
+      }
+
+      try {
+        console.log('🔗 Testando conexão com Neon Database...');
+        
+        const client = await pool.connect();
+        console.log('✅ Conexão Neon estabelecida!');
+        
+        // Testar query simples
+        const result = await client.query('SELECT NOW() as current_time, version() as postgres_version');
+        
+        // Verificar tabela usuarios
+        const tableCheck = await client.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'usuarios'
+          );
+        `);
+        
+        let userCount = 0;
+        if (tableCheck.rows[0].exists) {
+          const userCountResult = await client.query('SELECT COUNT(*) as count FROM usuarios');
+          userCount = parseInt(userCountResult.rows[0].count);
+        }
+        
+        client.release();
+        
+        return {
+          statusCode: 200,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            success: true,
+            message: '🎉 Neon Database conectado e funcionando!',
+            connection_info: {
+              connected: true,
+              current_time: result.rows[0].current_time,
+              postgres_version: result.rows[0].postgres_version,
+              table_usuarios_exists: tableCheck.rows[0].exists,
+              user_count: userCount
+            },
+            mode: 'neon_database',
+            timestamp: new Date().toISOString()
+          })
+        };
+        
+      } catch (error) {
+        console.error('❌ Erro Neon:', error);
+        
+        return {
+          statusCode: 500,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            success: false,
+            error: error.message,
+            message: 'Erro ao conectar com Neon - usando fallback mock',
+            mode: 'mock_fallback',
+            error_details: {
+              code: error.code,
+              detail: error.detail
+            },
+            timestamp: new Date().toISOString()
+          })
         };
       }
     }
@@ -563,7 +660,8 @@ exports.handler = async (event, context) => {
           auth: '/api/auth (POST: username, password, action=login)',
           register: '/api/register (POST: email, password, nome, telefone)',
           google_auth: '/api/google-auth',
-          admin_check: '/api/check-admin-status'
+          admin_check: '/api/check-admin-status',
+          neon_test: '/api/test-neon (GET: testa conexão Neon DB)'
         },
         data_summary: {
           total_users: mockDatabase.users.length,
