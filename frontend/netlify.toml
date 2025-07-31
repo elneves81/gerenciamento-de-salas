@@ -26,25 +26,19 @@
   force = true
 
 [[redirects]]
-  from = "/.netlify/functions/google-auth"
+  from = "/auth/*"
   to = "/.netlify/functions/admin-api"  
   status = 200
   force = true
 
 [[redirects]]
-  from = "/.netlify/functions/api/*"
+  from = "/register"
   to = "/.netlify/functions/admin-api"  
   status = 200
   force = true
 
 [[redirects]]
-  from = "/.netlify/functions/api/google-auth"
-  to = "/.netlify/functions/admin-api"  
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/.netlify/functions/auth"
+  from = "/test-neon"
   to = "/.netlify/functions/admin-api"  
   status = 200
   force = true
