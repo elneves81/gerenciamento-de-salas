@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setAuthHeader(token);
 
-      const response = await api.get('/auth', {
+      const response = await api.get('/auth/me', {
         signal,
         timeout: 10000, // 10 segundos de timeout
         headers: {
@@ -111,6 +111,7 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/auth', {
         username,
         password,
+        action: 'login'
       });
       
       const { access, refresh, user: userData } = response.data;
