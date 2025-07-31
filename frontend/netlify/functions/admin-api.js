@@ -515,6 +515,10 @@ async function handleSalas(event, headers) {
   try {
     await client.connect();
 
+    // Extrair path para usar nas operações PUT/DELETE
+    const pathToCheck = event.path || event.rawUrl || event.queryStringParameters?.path || '';
+    console.log('🔗 Path in handleSalas:', pathToCheck);
+
     // GET - Listar todas as salas
     if (event.httpMethod === 'GET') {
       console.log('📋 Buscando salas do banco...');
@@ -590,15 +594,46 @@ async function handleSalas(event, headers) {
     if (event.httpMethod === 'PUT') {
       console.log('✏️ Atualizando sala...');
       
-      const salaId = pathToCheck.split('/').pop() || event.queryStringParameters?.id;
+      // Tentar extrair ID de diferentes formas
+      let salaId = null;
+      
+      // Método 1: Da URL path
+      if (pathToCheck.includes('/salas/')) {
+        const pathParts = pathToCheck.split('/');
+        const salaIndex = pathParts.indexOf('salas');
+        if (salaIndex !== -1 && pathParts[salaIndex + 1]) {
+          salaId = pathParts[salaIndex + 1];
+        }
+      }
+      
+      // Método 2: Query parameters
+      if (!salaId && event.queryStringParameters?.id) {
+        salaId = event.queryStringParameters.id;
+      }
+      
+      // Método 3: Do body da requisição
       const body = JSON.parse(event.body || '{}');
+      if (!salaId && body.id) {
+        salaId = body.id;
+      }
+      
       const { nome, capacidade, localizacao, equipamentos, descricao, preco_hora, ativa } = body;
+      
+      console.log('🆔 Sala ID extraído:', salaId);
+      console.log('📝 Dados para atualização:', { nome, capacidade, localizacao, ativa });
 
       if (!salaId) {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: 'ID da sala é obrigatório' })
+          body: JSON.stringify({ 
+            error: 'ID da sala é obrigatório',
+            debug: {
+              path: pathToCheck,
+              queryParams: event.queryStringParameters,
+              bodyHasId: !!body.id
+            }
+          })
         };
       }
 
@@ -612,7 +647,7 @@ async function handleSalas(event, headers) {
         nome,
         parseInt(capacidade),
         localizacao,
-        equipamentos || [],  // Passamos diretamente a array
+        equipamentos || [],
         descricao,
         parseFloat(preco_hora || 0),
         ativa !== undefined ? ativa : true,
@@ -641,13 +676,46 @@ async function handleSalas(event, headers) {
     if (event.httpMethod === 'DELETE') {
       console.log('🗑️ Deletando sala...');
       
-      const salaId = pathToCheck.split('/').pop() || event.queryStringParameters?.id;
+      // Tentar extrair ID de diferentes formas
+      let salaId = null;
+      
+      // Método 1: Da URL path
+      if (pathToCheck.includes('/salas/')) {
+        const pathParts = pathToCheck.split('/');
+        const salaIndex = pathParts.indexOf('salas');
+        if (salaIndex !== -1 && pathParts[salaIndex + 1]) {
+          salaId = pathParts[salaIndex + 1];
+        }
+      }
+      
+      // Método 2: Query parameters
+      if (!salaId && event.queryStringParameters?.id) {
+        salaId = event.queryStringParameters.id;
+      }
+      
+      // Método 3: Do body da requisição
+      if (!salaId && event.body) {
+        try {
+          const body = JSON.parse(event.body);
+          if (body.id) {
+            salaId = body.id;
+          }
+        } catch {}
+      }
+      
+      console.log('🆔 Sala ID para deletar:', salaId);
 
       if (!salaId) {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: 'ID da sala é obrigatório' })
+          body: JSON.stringify({ 
+            error: 'ID da sala é obrigatório',
+            debug: {
+              path: pathToCheck,
+              queryParams: event.queryStringParameters
+            }
+          })
         };
       }
 
@@ -670,7 +738,8 @@ async function handleSalas(event, headers) {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          message: 'Sala removida com sucesso!'
+          message: 'Sala removida com sucesso!',
+          sala: result.rows[0]
         })
       };
     }
@@ -702,6 +771,10 @@ async function handleAgendamentos(event, headers) {
 
   try {
     await client.connect();
+
+    // Extrair path para usar nas operações PUT/DELETE
+    const pathToCheck = event.path || event.rawUrl || event.queryStringParameters?.path || '';
+    console.log('📅 Path in handleAgendamentos:', pathToCheck);
 
     // GET - Listar agendamentos
     if (event.httpMethod === 'GET') {
@@ -788,15 +861,41 @@ async function handleAgendamentos(event, headers) {
     if (event.httpMethod === 'PUT') {
       console.log('✏️ Atualizando agendamento...');
       
-      const agendamentoId = pathToCheck.split('/').pop() || event.queryStringParameters?.id;
+      // Tentar extrair ID de diferentes formas
+      let agendamentoId = null;
+      
+      if (pathToCheck.includes('/agendamentos/')) {
+        const pathParts = pathToCheck.split('/');
+        const agendamentoIndex = pathParts.indexOf('agendamentos');
+        if (agendamentoIndex !== -1 && pathParts[agendamentoIndex + 1]) {
+          agendamentoId = pathParts[agendamentoIndex + 1];
+        }
+      }
+      
+      if (!agendamentoId && event.queryStringParameters?.id) {
+        agendamentoId = event.queryStringParameters.id;
+      }
+      
       const body = JSON.parse(event.body || '{}');
+      if (!agendamentoId && body.id) {
+        agendamentoId = body.id;
+      }
+      
       const { data_inicio, data_fim, descricao, status } = body;
+      
+      console.log('🆔 Agendamento ID extraído:', agendamentoId);
 
       if (!agendamentoId) {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: 'ID do agendamento é obrigatório' })
+          body: JSON.stringify({ 
+            error: 'ID do agendamento é obrigatório',
+            debug: {
+              path: pathToCheck,
+              queryParams: event.queryStringParameters
+            }
+          })
         };
       }
 
@@ -829,13 +928,43 @@ async function handleAgendamentos(event, headers) {
     if (event.httpMethod === 'DELETE') {
       console.log('❌ Cancelando agendamento...');
       
-      const agendamentoId = pathToCheck.split('/').pop() || event.queryStringParameters?.id;
+      // Tentar extrair ID de diferentes formas
+      let agendamentoId = null;
+      
+      if (pathToCheck.includes('/agendamentos/')) {
+        const pathParts = pathToCheck.split('/');
+        const agendamentoIndex = pathParts.indexOf('agendamentos');
+        if (agendamentoIndex !== -1 && pathParts[agendamentoIndex + 1]) {
+          agendamentoId = pathParts[agendamentoIndex + 1];
+        }
+      }
+      
+      if (!agendamentoId && event.queryStringParameters?.id) {
+        agendamentoId = event.queryStringParameters.id;
+      }
+      
+      if (!agendamentoId && event.body) {
+        try {
+          const body = JSON.parse(event.body);
+          if (body.id) {
+            agendamentoId = body.id;
+          }
+        } catch {}
+      }
+      
+      console.log('🆔 Agendamento ID para cancelar:', agendamentoId);
 
       if (!agendamentoId) {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: 'ID do agendamento é obrigatório' })
+          body: JSON.stringify({ 
+            error: 'ID do agendamento é obrigatório',
+            debug: {
+              path: pathToCheck,
+              queryParams: event.queryStringParameters
+            }
+          })
         };
       }
 
@@ -858,7 +987,8 @@ async function handleAgendamentos(event, headers) {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          message: 'Agendamento cancelado com sucesso!'
+          message: 'Agendamento cancelado com sucesso!',
+          agendamento: result.rows[0]
         })
       };
     }
