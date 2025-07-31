@@ -88,7 +88,7 @@ import api from '../services/api';
 import GraficosInterativosSimples from '../components/GraficosInterativosSimples';
 import RelatoriosAvancados from '../components/RelatoriosAvancados';
 import GoogleCalendarResponsive from '../components/GoogleCalendarResponsive';
-import { useNotifications, useAutoNotifications } from '../components/NotificationSystem';
+import { useNotifications } from '../contexts/NotificationContext';
 import useReunioesAutoUpdate from '../hooks/useReunioesAutoUpdate';
 
 const DashboardPremium = () => {
@@ -185,7 +185,8 @@ const DashboardPremium = () => {
   }, []);
 
   // Hook para notificações automáticas
-  const { notifyReservationEvent } = useAutoNotifications(reservas);
+  // Hook de notificações simplificado
+  const notifyReservationEvent = () => {}; // Função vazia por enquanto
 
   // Hook para atualização automática de reuniões
   const { verificarReunioesTerminadas } = useReunioesAutoUpdate(allReservas, (reservaAtualizada) => {

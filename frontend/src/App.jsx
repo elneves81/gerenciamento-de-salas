@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { NotificationProvider } from './components/NotificationSystem';
+import { NotificationProvider } from './contexts/NotificationContext';
 import StorageInitializer from './components/StorageInitializer';
 import HeaderModernoLimpo from './components/HeaderModernoLimpo';
 import HeaderSimples from './components/HeaderSimples';

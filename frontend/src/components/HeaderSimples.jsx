@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { NotificationCenter } from './NotificationSystem';
+import { NotificationCenter } from './NotificationCenter';
 import { 
   Building2,
   Settings,
