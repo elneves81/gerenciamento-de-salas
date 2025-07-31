@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Configurações centralizadas
 const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || '/.netlify/functions',
+  BASE_URL: import.meta.env.VITE_API_URL || '/api',
   TIMEOUT: 10000,
   MAX_RETRIES: 2,
   RETRY_DELAY: 1000

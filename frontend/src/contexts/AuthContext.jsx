@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setAuthHeader(token);
 
-      const response = await api.get('/.netlify/functions/auth', {
+      const response = await api.get('/auth', {
         signal,
         timeout: 10000, // 10 segundos de timeout
         headers: {
@@ -108,7 +108,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await api.post('/.netlify/functions/auth', {
+      const response = await api.post('/auth', {
         username,
         password,
       });
@@ -139,7 +139,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await api.post('/.netlify/functions/register', userData);
+      const response = await api.post('/register', userData);
       
       if (response.data.token) {
         setToken(response.data.token);
@@ -166,7 +166,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await api.post('/.netlify/functions/google-auth', { credential });
+      const response = await api.post('/google-auth', { credential });
       
       if (response.data.token) {
         setToken(response.data.token);
