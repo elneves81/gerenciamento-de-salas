@@ -89,6 +89,12 @@ import api from '../services/api';
 import GraficosInterativosSimples from '../components/GraficosInterativosSimples';
 import RelatoriosAvancados from '../components/RelatoriosAvancados';
 import GoogleCalendarResponsive from '../components/GoogleCalendarResponsive';
+import AdminPanel from '../components/AdminPanel';
+import NotificationCenter from '../components/NotificationCenter';
+import UserHierarchy from '../components/UserHierarchy';
+import IntegracaoCalendario from '../components/IntegracaoCalendario';
+import DashboardCharts from '../components/DashboardCharts';
+import EmailTemplates from '../components/EmailTemplates';
 import { useNotifications } from '../contexts/NotificationContext';
 import useReunioesAutoUpdate from '../hooks/useReunioesAutoUpdate';
 
@@ -547,14 +553,7 @@ const DashboardPremium = () => {
                 </IconButton>
               </Tooltip>
               <Tooltip title="Notificações">
-                <IconButton 
-                  onClick={() => setNotificationDialog(true)}
-                  sx={{ color: 'white' }}
-                >
-                  <Badge badgeContent={proximasReservas.length} color="error">
-                    <Notifications />
-                  </Badge>
-                </IconButton>
+                <NotificationCenter />
               </Tooltip>
               <Tooltip title="Configurações">
                 <IconButton 
@@ -712,6 +711,41 @@ const DashboardPremium = () => {
             <Tab 
               label="Gráficos" 
               icon={<Analytics />} 
+              iconPosition={isMobile ? "top" : "start"}
+            />
+            <Tab 
+              label="Admin" 
+              icon={<Settings />} 
+              iconPosition={isMobile ? "top" : "start"}
+            />
+            <Tab 
+              label="Usuários" 
+              icon={<People />} 
+              iconPosition={isMobile ? "top" : "start"}
+            />
+            <Tab 
+              label="Admin" 
+              icon={<Settings />} 
+              iconPosition={isMobile ? "top" : "start"}
+            />
+            <Tab 
+              label="Usuários" 
+              icon={<People />} 
+              iconPosition={isMobile ? "top" : "start"}
+            />
+            <Tab 
+              label="Integração" 
+              icon={<Event />} 
+              iconPosition={isMobile ? "top" : "start"}
+            />
+            <Tab 
+              label="Charts" 
+              icon={<TrendingUp />} 
+              iconPosition={isMobile ? "top" : "start"}
+            />
+            <Tab 
+              label="Email" 
+              icon={<Notifications />} 
               iconPosition={isMobile ? "top" : "start"}
             />
           </Tabs>
@@ -1655,6 +1689,72 @@ const DashboardPremium = () => {
         {activeTab === 4 && (
           <Box sx={{ mt: 2 }}>
             <GraficosInterativosSimples reservas={allReservas} salas={salas} />
+          </Box>
+        )}
+
+        {/* Tab de Admin */}
+        {activeTab === 5 && (
+          <Box sx={{ mt: 2 }}>
+            <AdminPanel />
+          </Box>
+        )}
+
+        {/* Tab de Usuários */}
+        {activeTab === 6 && (
+          <Box sx={{ mt: 2 }}>
+            <UserHierarchy />
+          </Box>
+        )}
+
+        {/* Tab de Integração de Calendário */}
+        {activeTab === 7 && (
+          <Box sx={{ mt: 2 }}>
+            <IntegracaoCalendario 
+              reservas={allReservas} 
+              salas={salas}
+              onNovaReserva={() => navigate('/nova-reserva')}
+              onEditarReserva={(id) => navigate(`/reservas?edit=${id}`)}
+              onDeletarReserva={cancelarReserva}
+            />
+          </Box>
+        )}
+
+        {/* Tab de Charts Avançados */}
+        {activeTab === 8 && (
+          <Box sx={{ mt: 2 }}>
+            <DashboardCharts 
+              dashboardData={dashboardData}
+              reservas={allReservas}
+              salas={salas}
+            />
+          </Box>
+        )}
+
+        {/* Tab de Email Templates */}
+        {activeTab === 9 && (
+          <Box sx={{ mt: 2 }}>
+            <EmailTemplates />
+          </Box>
+        )}
+
+        {/* Tab de Calendário Responsivo */}
+        {activeTab === 3 && (
+          <Box sx={{ mt: 2 }}>
+            <GoogleCalendarResponsive reservas={allReservas} salas={salas} />
+          </Box>
+        )}
+
+        {/* Tab de Admin */}
+        {activeTab === 5 && (
+          <Box sx={{ mt: 2 }}>
+            <AdminPanel />
+          </Box>
+        )}
+
+        {/* Tab de Usuários */}
+        {activeTab === 6 && (
+          <Box sx={{ mt: 2 }}>
+            <UserHierarchy />
           </Box>
         )}
 
