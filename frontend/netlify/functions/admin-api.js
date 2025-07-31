@@ -835,14 +835,15 @@ async function handleAgendamentos(event, headers) {
       }
 
       const result = await client.query(`
-        INSERT INTO agendamentos (sala_id, usuario_id, data_inicio, data_fim, descricao, status, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        INSERT INTO agendamentos (sala_id, usuario_id, data_inicio, data_fim, titulo, descricao, status, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
         RETURNING *
       `, [
         sala_id,
         usuario_id,
         data_inicio,
         data_fim,
+        titulo || 'Reserva sem título',
         descricao || '',
         status || 'confirmado'
       ]);

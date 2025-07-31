@@ -202,7 +202,8 @@ const NovaReserva = () => {
         usuario_id: user?.id || 1, // Use o ID do usuário logado
         data_inicio: dataInicio.toISOString(),
         data_fim: dataFim.toISOString(),
-        descricao: `${formData.titulo}\n${formData.descricao}`.trim(),
+        titulo: formData.titulo || 'Reserva sem título',
+        descricao: formData.descricao || '',
         status: 'confirmado'
       };
 
