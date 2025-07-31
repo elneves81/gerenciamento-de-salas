@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setAuthHeader(token);
 
-      const response = await api.get('/auth/me', {
+      const response = await api.get('/.netlify/functions/auth', {
         signal,
         timeout: 10000, // 10 segundos de timeout
         headers: {
@@ -108,8 +108,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await api.post('/api/auth', {
-        action: 'login',
+      const response = await api.post('/.netlify/functions/auth', {
         username,
         password,
       });
@@ -124,8 +123,8 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Erro no login:', error);
-      const errorMessage = error.response?.data?.detail || 
-                          error.response?.data?.non_field_errors?.[0] ||
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.detail ||
                           'Erro ao fazer login';
       setError(errorMessage);
       return { success: false, error: errorMessage };
@@ -140,7 +139,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await api.post('/api/register', userData);
+      const response = await api.post('/.netlify/functions/register', userData);
       
       if (response.data.token) {
         setToken(response.data.token);
@@ -153,7 +152,7 @@ export const AuthProvider = ({ children }) => {
       
       return response.data;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Erro ao registrar usuário';
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Erro ao registrar usuário';
       setError(errorMessage);
       throw error;
     } finally {
@@ -167,8 +166,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      // Usar admin-api diretamente - sabemos que funciona
-      const response = await api.post('/admin/google-auth', { credential });
+      const response = await api.post('/.netlify/functions/google-auth', { credential });
       
       if (response.data.token) {
         setToken(response.data.token);
@@ -181,7 +179,7 @@ export const AuthProvider = ({ children }) => {
       
       return response.data;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Erro ao fazer login com Google';
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Erro ao fazer login com Google';
       setError(errorMessage);
       throw error;
     } finally {

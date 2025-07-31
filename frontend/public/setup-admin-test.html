@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Admin - SalaFácil</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Setup Admin - SalaFácil</h1>
+        
+        <div class="info">
+            <strong>Este utilitário vai:</strong>
+            <ul>
+                <li>Criar a tabela de usuários se não existir</li>
+                <li>Criar/resetar o usuário admin padrão</li>
+                <li>Testar a autenticação</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="button" onclick="setupAdmin()">🚀 Configurar Admin</button>
+            <button class="button" onclick="testLogin()">🔐 Testar Login</button>
+            <button class="button" onclick="testGoogleLogin()">📱 Testar Google Login</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <p>⏳ Processando...</p>
+        </div>
+
+        <div id="results"></div>
+
+        <div class="info">
+            <strong>Credenciais padrão após setup:</strong><br>
+            <strong>Usuário:</strong> admin<br>
+            <strong>Senha:</strong> admin123<br>
+            <strong>Email:</strong> admin@salafacil.com
+        </div>
+    </div>
+
+    <script>
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        async function setupAdmin() {
+            showLoading();
+            try {
+                const response = await fetch('/.netlify/functions/setup-default-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult(`
+                        <strong>✅ Admin configurado com sucesso!</strong><br>
+                        <strong>Usuário:</strong> ${data.admin.username}<br>
+                        <strong>Email:</strong> ${data.admin.email}<br>
+                        <strong>Senha:</strong> ${data.admin.password}
+                    `, 'success');
+                } else {
+                    showResult(`❌ Erro: ${data.message}<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Erro de conexão: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function testLogin() {
+            showLoading();
+            try {
+                const response = await fetch('/.netlify/functions/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.access) {
+                    showResult(`
+                        <strong>✅ Login tradicional funcionando!</strong><br>
+                        <strong>Usuário:</strong> ${data.user.username}<br>
+                        <strong>Email:</strong> ${data.user.email}<br>
+                        <strong>Nome:</strong> ${data.user.nome}<br>
+                        <strong>Token:</strong> ${data.access.substring(0, 50)}...
+                    `, 'success');
+                } else {
+                    showResult(`❌ Erro no login: ${data.error || 'Erro desconhecido'}<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Erro de conexão: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function testGoogleLogin() {
+            showLoading();
+            try {
+                const response = await fetch('/.netlify/functions/google-auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        credential: 'mock_google_credential_test'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    showResult(`
+                        <strong>✅ Login Google (demo) funcionando!</strong><br>
+                        <strong>Usuário:</strong> ${data.user.username}<br>
+                        <strong>Email:</strong> ${data.user.email}<br>
+                        <strong>Nome:</strong> ${data.user.nome}<br>
+                        <strong>Token:</strong> ${data.token.substring(0, 50)}...
+                    `, 'success');
+                } else {
+                    showResult(`❌ Erro no login Google: ${data.error || 'Erro desconhecido'}<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Erro de conexão: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Limpar resultados ao carregar a página
+        document.getElementById('results').innerHTML = '';
+    </script>
+</body>
+</html>
