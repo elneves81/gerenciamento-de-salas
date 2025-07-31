@@ -9,7 +9,43 @@ let pgAvailable = false;
 async function initializeNeonPool() {
   try {
     console.log('🔍 Verificando disponibilidade do módulo pg...');
-    const { Pool } = require('pg');
+    
+    let Pool;
+    
+    // Tentar diferentes formas de importar pg
+    try {
+      // Tentativa 1: CommonJS require
+      console.log('Tentativa 1: CommonJS require...');
+      const pg = require('pg');
+      Pool = pg.Pool;
+      console.log('✅ CommonJS require funcionou!');
+    } catch (err1) {
+      console.log('❌ CommonJS falhou:', err1.message);
+      
+      try {
+        // Tentativa 2: ESM import dinâmico
+        console.log('Tentativa 2: ESM import dinâmico...');
+        const pg = await import('pg');
+        Pool = pg.default?.Pool || pg.Pool;
+        console.log('✅ ESM import funcionou!');
+      } catch (err2) {
+        console.log('❌ ESM import falhou:', err2.message);
+        
+        try {
+          // Tentativa 3: Require direto do Pool
+          console.log('Tentativa 3: Require direto Pool...');
+          Pool = require('pg').Pool;
+          console.log('✅ Require direto funcionou!');
+        } catch (err3) {
+          console.log('❌ Require direto falhou:', err3.message);
+          throw new Error('Todas as tentativas de importar pg falharam');
+        }
+      }
+    }
+    
+    if (!Pool) {
+      throw new Error('Pool class não foi encontrada');
+    }
     
     console.log('✅ Módulo pg encontrado, inicializando pool...');
     pool = new Pool({
