@@ -570,7 +570,7 @@ async function handleSalas(event, headers) {
         nome,
         parseInt(capacidade),
         localizacao || '',
-        JSON.stringify(equipamentos || []),
+        equipamentos || [],  // Passamos diretamente a array, não JSON.stringify
         descricao || '',
         parseFloat(preco_hora || 0),
         true
@@ -612,7 +612,7 @@ async function handleSalas(event, headers) {
         nome,
         parseInt(capacidade),
         localizacao,
-        JSON.stringify(equipamentos || []),
+        equipamentos || [],  // Passamos diretamente a array
         descricao,
         parseFloat(preco_hora || 0),
         ativa !== undefined ? ativa : true,
