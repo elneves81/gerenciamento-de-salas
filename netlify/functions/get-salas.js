@@ -1,9 +1,6 @@
 // Função de gerenciamento de salas com fallback robusto
 const { Client } = require('pg');
 
-// Função de gerenciamento de salas com fallback robusto
-const { Client } = require('pg');
-
 const FALLBACK_SALAS = [
   { 
     id: 1, 
