@@ -6,12 +6,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'sua-chave-secreta-muito-segura';
 
 // Configuração do banco Google Cloud SQL
 const getDbClient = () => {
-  // Sempre usar configuração direta para evitar problemas de encoding
+  // Tentativa com usuário postgres padrão
   const dbConfig = {
     host: '34.95.225.183',
     port: 5432,
     database: 'salafacil',
-    user: 'salafacil_user',
+    user: 'postgres',
     password: 'elber@2025',
     ssl: {
       rejectUnauthorized: false
