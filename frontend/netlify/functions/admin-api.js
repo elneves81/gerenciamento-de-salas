@@ -421,46 +421,378 @@ async function handleGoogleAuth(body, headers) {
   };
 }
 
-// Funções de salas e agendamentos simplificadas
+// Funções de salas conectadas ao Google Cloud SQL
 async function handleSalas(event, headers) {
-  if (event.httpMethod === 'GET') {
+  const client = getDbClient();
+
+  try {
+    await client.connect();
+
+    // GET - Listar todas as salas
+    if (event.httpMethod === 'GET') {
+      console.log('📋 Buscando salas do banco...');
+      
+      const result = await client.query(`
+        SELECT id, nome, capacidade, localizacao, equipamentos, descricao, preco_hora, ativa, created_at, updated_at
+        FROM salas 
+        WHERE ativa = true 
+        ORDER BY nome ASC
+      `);
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(result.rows)
+      };
+    }
+
+    // POST - Criar nova sala
+    if (event.httpMethod === 'POST') {
+      console.log('➕ Criando nova sala...');
+      
+      const body = JSON.parse(event.body || '{}');
+      const { nome, capacidade, localizacao, equipamentos, descricao, preco_hora } = body;
+
+      if (!nome || !capacidade) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Nome e capacidade são obrigatórios' })
+        };
+      }
+
+      // Verificar se já existe sala com mesmo nome
+      const existingSala = await client.query(
+        'SELECT id FROM salas WHERE nome = $1',
+        [nome]
+      );
+
+      if (existingSala.rows.length > 0) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Já existe uma sala com este nome' })
+        };
+      }
+
+      const result = await client.query(`
+        INSERT INTO salas (nome, capacidade, localizacao, equipamentos, descricao, preco_hora, ativa, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+        RETURNING *
+      `, [
+        nome,
+        parseInt(capacidade),
+        localizacao || '',
+        JSON.stringify(equipamentos || []),
+        descricao || '',
+        parseFloat(preco_hora || 0),
+        true
+      ]);
+
+      return {
+        statusCode: 201,
+        headers,
+        body: JSON.stringify({
+          message: 'Sala criada com sucesso!',
+          sala: result.rows[0]
+        })
+      };
+    }
+
+    // PUT - Atualizar sala
+    if (event.httpMethod === 'PUT') {
+      console.log('✏️ Atualizando sala...');
+      
+      const salaId = event.path.split('/').pop();
+      const body = JSON.parse(event.body || '{}');
+      const { nome, capacidade, localizacao, equipamentos, descricao, preco_hora, ativa } = body;
+
+      if (!salaId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'ID da sala é obrigatório' })
+        };
+      }
+
+      const result = await client.query(`
+        UPDATE salas 
+        SET nome = $1, capacidade = $2, localizacao = $3, equipamentos = $4, 
+            descricao = $5, preco_hora = $6, ativa = $7, updated_at = NOW()
+        WHERE id = $8
+        RETURNING *
+      `, [
+        nome,
+        parseInt(capacidade),
+        localizacao,
+        JSON.stringify(equipamentos || []),
+        descricao,
+        parseFloat(preco_hora || 0),
+        ativa !== undefined ? ativa : true,
+        salaId
+      ]);
+
+      if (result.rows.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: 'Sala não encontrada' })
+        };
+      }
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Sala atualizada com sucesso!',
+          sala: result.rows[0]
+        })
+      };
+    }
+
+    // DELETE - Deletar sala (soft delete)
+    if (event.httpMethod === 'DELETE') {
+      console.log('🗑️ Deletando sala...');
+      
+      const salaId = event.path.split('/').pop();
+
+      if (!salaId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'ID da sala é obrigatório' })
+        };
+      }
+
+      const result = await client.query(`
+        UPDATE salas 
+        SET ativa = false, updated_at = NOW()
+        WHERE id = $1
+        RETURNING *
+      `, [salaId]);
+
+      if (result.rows.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: 'Sala não encontrada' })
+        };
+      }
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Sala removida com sucesso!'
+        })
+      };
+    }
+
     return {
-      statusCode: 200,
+      statusCode: 405,
       headers,
-      body: JSON.stringify([
-        {
-          id: 1,
-          nome: 'Sala Executiva A',
-          capacidade: 12,
-          localizacao: 'Andar 1 - Ala Norte',
-          equipamentos: ['Projetor', 'TV 55"', 'Sistema de Som'],
-          descricao: 'Sala moderna para reuniões executivas',
-          preco_hora: 150.00,
-          ativa: true
-        }
-      ])
+      body: JSON.stringify({ error: 'Método não permitido' })
     };
+
+  } catch (dbError) {
+    console.error('❌ Database error in handleSalas:', dbError);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Erro de conexão com banco de dados',
+        details: dbError.message 
+      })
+    };
+  } finally {
+    try { await client.end(); } catch {}
   }
-  
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({ message: 'Salas endpoint' })
-  };
 }
 
+// Função de agendamentos conectada ao Google Cloud SQL
 async function handleAgendamentos(event, headers) {
-  if (event.httpMethod === 'GET') {
+  const client = getDbClient();
+
+  try {
+    await client.connect();
+
+    // GET - Listar agendamentos
+    if (event.httpMethod === 'GET') {
+      console.log('📅 Buscando agendamentos do banco...');
+      
+      const result = await client.query(`
+        SELECT a.*, s.nome as sala_nome, u.nome as usuario_nome
+        FROM agendamentos a
+        LEFT JOIN salas s ON a.sala_id = s.id
+        LEFT JOIN usuarios u ON a.usuario_id = u.id
+        ORDER BY a.data_inicio DESC
+      `);
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(result.rows)
+      };
+    }
+
+    // POST - Criar novo agendamento
+    if (event.httpMethod === 'POST') {
+      console.log('📝 Criando novo agendamento...');
+      
+      const body = JSON.parse(event.body || '{}');
+      const { sala_id, usuario_id, data_inicio, data_fim, descricao, status } = body;
+
+      if (!sala_id || !usuario_id || !data_inicio || !data_fim) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: 'Sala, usuário, data de início e fim são obrigatórios' 
+          })
+        };
+      }
+
+      // Verificar conflitos de agendamento
+      const conflictCheck = await client.query(`
+        SELECT id FROM agendamentos 
+        WHERE sala_id = $1 
+        AND status != 'cancelado'
+        AND (
+          ($2 >= data_inicio AND $2 < data_fim) OR
+          ($3 > data_inicio AND $3 <= data_fim) OR
+          ($2 <= data_inicio AND $3 >= data_fim)
+        )
+      `, [sala_id, data_inicio, data_fim]);
+
+      if (conflictCheck.rows.length > 0) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: 'Já existe um agendamento para esta sala neste horário' 
+          })
+        };
+      }
+
+      const result = await client.query(`
+        INSERT INTO agendamentos (sala_id, usuario_id, data_inicio, data_fim, descricao, status, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        RETURNING *
+      `, [
+        sala_id,
+        usuario_id,
+        data_inicio,
+        data_fim,
+        descricao || '',
+        status || 'confirmado'
+      ]);
+
+      return {
+        statusCode: 201,
+        headers,
+        body: JSON.stringify({
+          message: 'Agendamento criado com sucesso!',
+          agendamento: result.rows[0]
+        })
+      };
+    }
+
+    // PUT - Atualizar agendamento
+    if (event.httpMethod === 'PUT') {
+      console.log('✏️ Atualizando agendamento...');
+      
+      const agendamentoId = event.path.split('/').pop();
+      const body = JSON.parse(event.body || '{}');
+      const { data_inicio, data_fim, descricao, status } = body;
+
+      if (!agendamentoId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'ID do agendamento é obrigatório' })
+        };
+      }
+
+      const result = await client.query(`
+        UPDATE agendamentos 
+        SET data_inicio = $1, data_fim = $2, descricao = $3, status = $4
+        WHERE id = $5
+        RETURNING *
+      `, [data_inicio, data_fim, descricao, status, agendamentoId]);
+
+      if (result.rows.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: 'Agendamento não encontrado' })
+        };
+      }
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Agendamento atualizado com sucesso!',
+          agendamento: result.rows[0]
+        })
+      };
+    }
+
+    // DELETE - Cancelar agendamento
+    if (event.httpMethod === 'DELETE') {
+      console.log('❌ Cancelando agendamento...');
+      
+      const agendamentoId = event.path.split('/').pop();
+
+      if (!agendamentoId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'ID do agendamento é obrigatório' })
+        };
+      }
+
+      const result = await client.query(`
+        UPDATE agendamentos 
+        SET status = 'cancelado'
+        WHERE id = $1
+        RETURNING *
+      `, [agendamentoId]);
+
+      if (result.rows.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: 'Agendamento não encontrado' })
+        };
+      }
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Agendamento cancelado com sucesso!'
+        })
+      };
+    }
+
     return {
-      statusCode: 200,
+      statusCode: 405,
       headers,
-      body: JSON.stringify([])
+      body: JSON.stringify({ error: 'Método não permitido' })
     };
+
+  } catch (dbError) {
+    console.error('❌ Database error in handleAgendamentos:', dbError);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Erro de conexão com banco de dados',
+        details: dbError.message 
+      })
+    };
+  } finally {
+    try { await client.end(); } catch {}
   }
-  
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({ message: 'Agendamentos endpoint' })
-  };
 }
