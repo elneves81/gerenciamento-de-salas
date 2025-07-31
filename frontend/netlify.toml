@@ -38,6 +38,12 @@
   force = true
 
 [[redirects]]
+  from = "/.netlify/functions/api/google-auth"
+  to = "/.netlify/functions/admin-api"  
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/.netlify/functions/auth"
   to = "/.netlify/functions/admin-api"  
   status = 200
