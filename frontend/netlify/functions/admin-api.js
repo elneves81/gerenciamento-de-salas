@@ -52,11 +52,25 @@ exports.handler = async (event, context) => {
     const pathToCheck = event.path || event.rawUrl || event.queryStringParameters?.path || '';
     console.log('📍 Path being checked:', pathToCheck);
     
-    // ROTEAMENTO DE AUTENTICAÇÃO
+    // TESTE DE CONEXÃO COM BANCO (primeiro para evitar conflitos)
+    if (pathToCheck.includes('/test-db') || pathToCheck.includes('/test-connection')) {
+      return await handleTestDb(headers);
+    }
+
+    // ROTEAMENTO DE SALAS
+    if (pathToCheck.includes('/salas') || pathToCheck.includes('/get-salas')) {
+      return await handleSalas(event, headers);
+    }
+
+    // ROTEAMENTO DE AGENDAMENTOS  
+    if (pathToCheck.includes('/agendamentos')) {
+      return await handleAgendamentos(event, headers);
+    }
+    
+    // ROTEAMENTO DE AUTENTICAÇÃO (default para tudo que sobrar)
     if (pathToCheck.includes('/auth') || pathToCheck.includes('/api/auth') || 
         pathToCheck.includes('/login') || pathToCheck.includes('/register') ||
-        pathToCheck.includes('/google-auth') ||
-        (!pathToCheck.includes('/salas') && !pathToCheck.includes('/agendamentos') && !pathToCheck.includes('/test-db'))) {
+        pathToCheck.includes('/google-auth') || pathToCheck === '' || pathToCheck === '/api') {
       
       // Se for GET para auth, verificar usuário logado
       if (event.httpMethod === 'GET') {
@@ -85,11 +99,6 @@ exports.handler = async (event, context) => {
     // ROTEAMENTO DE AGENDAMENTOS  
     if (pathToCheck.includes('/agendamentos')) {
       return await handleAgendamentos(event, headers);
-    }
-
-    // TESTE DE CONEXÃO COM BANCO
-    if (pathToCheck.includes('/test-db') || pathToCheck.includes('/test-connection')) {
-      return await handleTestDb(headers);
     }
 
     // Endpoint padrão
