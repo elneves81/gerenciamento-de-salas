@@ -8,10 +8,12 @@ const MOCK_AGENDAMENTOS = [
     sala_nome: 'Sala Executiva',
     titulo: 'Reunião de Planejamento',
     descricao: 'Reunião mensal da equipe',
-    data_inicio: '2025-07-29T14:00:00.000Z',
-    data_fim: '2025-07-29T15:00:00.000Z',
+    data_inicio: '2025-07-31T14:00:00.000Z',
+    data_fim: '2025-07-31T15:00:00.000Z',
+    participantes: 5,
+    status: 'agendada',
     usuario_id: 1,
-    criado_em: '2025-07-29T10:00:00.000Z'
+    criado_em: '2025-07-31T10:00:00.000Z'
   },
   {
     id: 2,
@@ -19,10 +21,25 @@ const MOCK_AGENDAMENTOS = [
     sala_nome: 'Auditório Central',
     titulo: 'Apresentação Trimestral',
     descricao: 'Resultados do trimestre',
-    data_inicio: '2025-07-29T16:00:00.000Z',
-    data_fim: '2025-07-29T17:30:00.000Z',
+    data_inicio: '2025-08-01T16:00:00.000Z',
+    data_fim: '2025-08-01T17:30:00.000Z',
+    participantes: 25,
+    status: 'agendada',
     usuario_id: 1,
-    criado_em: '2025-07-29T10:00:00.000Z'
+    criado_em: '2025-07-31T10:00:00.000Z'
+  },
+  {
+    id: 3,
+    sala_id: 3,
+    sala_nome: 'Sala de Brainstorm',
+    titulo: 'Workshop de Inovação',
+    descricao: 'Sessão de brainstorm para novos projetos',
+    data_inicio: '2025-08-02T09:00:00.000Z',
+    data_fim: '2025-08-02T12:00:00.000Z',
+    participantes: 8,
+    status: 'agendada',
+    usuario_id: 1,
+    criado_em: '2025-07-31T10:00:00.000Z'
   }
 ];
 

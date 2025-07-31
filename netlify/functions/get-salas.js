@@ -1,10 +1,37 @@
 // Função de gerenciamento de salas com fallback robusto
 const { Client } = require('pg');
 
+// Função de gerenciamento de salas com fallback robusto
+const { Client } = require('pg');
+
 const FALLBACK_SALAS = [
-  { id: 1, nome: 'Sala A', capacidade: 10, disponivel: true },
-  { id: 2, nome: 'Sala B', capacidade: 8, disponivel: true },
-  { id: 3, nome: 'Auditório', capacidade: 50, disponivel: true }
+  { 
+    id: 1, 
+    nome: 'Sala Executiva', 
+    capacidade: 8,
+    equipamentos: 'TV 55", Videoconferência',
+    descricao: 'Sala para reuniões executivas',
+    disponivel: true,
+    criado_em: '2025-07-29T10:00:00.000Z'
+  },
+  { 
+    id: 2, 
+    nome: 'Auditório Central', 
+    capacidade: 100,
+    equipamentos: 'Projetor 4K, Sistema de som',
+    descricao: 'Auditório para apresentações',
+    disponivel: true,
+    criado_em: '2025-07-29T10:00:00.000Z'
+  },
+  { 
+    id: 3, 
+    nome: 'Sala de Brainstorm', 
+    capacidade: 12,
+    equipamentos: 'Quadros brancos, TV interativa',
+    descricao: 'Espaço para colaboração',
+    disponivel: true,
+    criado_em: '2025-07-29T10:00:00.000Z'
+  }
 ];
 
 exports.handler = async (event, context) => {
@@ -35,7 +62,7 @@ exports.handler = async (event, context) => {
         });
         
         await client.connect();
-        const result = await client.query('SELECT * FROM agendamento_sala ORDER BY id');
+        const result = await client.query('SELECT * FROM salas ORDER BY id');
         if (result.rows.length > 0) {
           salas = result.rows;
         }

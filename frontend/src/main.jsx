@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 import './styles/darkMode.css'
-import './utils/deviceDetection.js'
 
 // Verifica se o modo escuro está ativo ao carregar a aplicação
 const isDarkMode = localStorage.getItem('darkMode') === 'true';
