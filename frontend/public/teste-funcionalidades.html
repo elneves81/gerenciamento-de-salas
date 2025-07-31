@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Funcionalidades - SalaFácil</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .delete-btn {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+        .update-btn {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: rgba(244, 67, 54, 0.2);
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+        input::placeholder, textarea::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .form-row > div {
+            flex: 1;
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 5px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 Teste de Funcionalidades - SalaFácil</h1>
+        
+        <!-- Teste de Conexão -->
+        <div class="test-section">
+            <h2>🔍 1. Teste de Conexão com Banco</h2>
+            <button onclick="testarConexao()">Testar Conexão</button>
+            <div id="conexao-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Listar Salas -->
+        <div class="test-section">
+            <h2>🏢 2. Listar Salas</h2>
+            <button onclick="listarSalas()">Carregar Salas</button>
+            <div id="salas-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Criar Sala -->
+        <div class="test-section">
+            <h2>➕ 3. Criar Nova Sala</h2>
+            <div class="form-row">
+                <div>
+                    <input type="text" id="sala-nome" placeholder="Nome da sala" value="Sala de Teste API">
+                </div>
+                <div>
+                    <input type="number" id="sala-capacidade" placeholder="Capacidade" value="10">
+                </div>
+            </div>
+            <input type="text" id="sala-localizacao" placeholder="Localização" value="Andar 3 - Teste">
+            <textarea id="sala-descricao" placeholder="Descrição" rows="3">Sala criada via teste de API para verificar funcionalidade</textarea>
+            <button onclick="criarSala()">Criar Sala</button>
+            <div id="criar-sala-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Atualizar Sala -->
+        <div class="test-section">
+            <h2>✏️ 4. Atualizar Sala</h2>
+            <div class="form-row">
+                <div>
+                    <input type="number" id="update-sala-id" placeholder="ID da sala para atualizar">
+                </div>
+                <div>
+                    <input type="text" id="update-sala-nome" placeholder="Novo nome">
+                </div>
+            </div>
+            <button class="update-btn" onclick="atualizarSala()">Atualizar Sala</button>
+            <div id="update-sala-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Deletar Sala -->
+        <div class="test-section">
+            <h2>🗑️ 5. Deletar Sala</h2>
+            <input type="number" id="delete-sala-id" placeholder="ID da sala para deletar">
+            <button class="delete-btn" onclick="deletarSala()">Deletar Sala</button>
+            <div id="delete-sala-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Listar Agendamentos -->
+        <div class="test-section">
+            <h2>📅 6. Listar Agendamentos</h2>
+            <button onclick="listarAgendamentos()">Carregar Agendamentos</button>
+            <div id="agendamentos-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Criar Agendamento -->
+        <div class="test-section">
+            <h2>📝 7. Criar Agendamento</h2>
+            <div class="form-row">
+                <div>
+                    <input type="number" id="agend-sala-id" placeholder="ID da sala" value="1">
+                </div>
+                <div>
+                    <input type="number" id="agend-usuario-id" placeholder="ID do usuário" value="1">
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <input type="datetime-local" id="agend-inicio" value="2025-08-01T09:00">
+                </div>
+                <div>
+                    <input type="datetime-local" id="agend-fim" value="2025-08-01T10:00">
+                </div>
+            </div>
+            <textarea id="agend-descricao" placeholder="Descrição do agendamento" rows="2">Teste de agendamento via API</textarea>
+            <button onclick="criarAgendamento()">Criar Agendamento</button>
+            <div id="criar-agend-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Status Geral -->
+        <div class="test-section">
+            <h2>📊 Status dos Testes</h2>
+            <div id="status-geral">
+                <span class="status">Aguardando testes...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/.netlify/functions/admin-api';
+        let statusTestes = {
+            conexao: false,
+            listarSalas: false,
+            criarSala: false,
+            atualizarSala: false,
+            deletarSala: false,
+            listarAgendamentos: false,
+            criarAgendamento: false
+        };
+
+        function atualizarStatus() {
+            const statusDiv = document.getElementById('status-geral');
+            const total = Object.keys(statusTestes).length;
+            const sucessos = Object.values(statusTestes).filter(s => s).length;
+            
+            statusDiv.innerHTML = `
+                <span class="status ${sucessos === total ? 'success' : 'error'}">
+                    ${sucessos}/${total} testes passaram
+                </span>
+            `;
+        }
+
+        async function fazerRequisicao(metodo, url, dados = null) {
+            try {
+                const config = {
+                    method: metodo,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (dados) {
+                    config.body = JSON.stringify(dados);
+                }
+
+                const response = await fetch(API_BASE + url, config);
+                const result = await response.json();
+                
+                return {
+                    sucesso: response.ok,
+                    dados: result,
+                    status: response.status
+                };
+            } catch (error) {
+                return {
+                    sucesso: false,
+                    erro: error.message
+                };
+            }
+        }
+
+        function mostrarResultado(elementId, resultado, sucesso = true) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = sucesso ? 'result' : 'result error';
+            element.textContent = typeof resultado === 'object' ? 
+                JSON.stringify(resultado, null, 2) : resultado;
+        }
+
+        async function testarConexao() {
+            const resultado = await fazerRequisicao('GET', '/test-connection');
+            statusTestes.conexao = resultado.sucesso;
+            mostrarResultado('conexao-result', resultado.dados || resultado.erro, resultado.sucesso);
+            atualizarStatus();
+        }
+
+        async function listarSalas() {
+            const resultado = await fazerRequisicao('GET', '/salas');
+            statusTestes.listarSalas = resultado.sucesso;
+            mostrarResultado('salas-result', resultado.dados || resultado.erro, resultado.sucesso);
+            atualizarStatus();
+        }
+
+        async function criarSala() {
+            const dados = {
+                nome: document.getElementById('sala-nome').value,
+                capacidade: parseInt(document.getElementById('sala-capacidade').value),
+                localizacao: document.getElementById('sala-localizacao').value,
+                descricao: document.getElementById('sala-descricao').value,
+                preco_hora: 100.00
+            };
+
+            const resultado = await fazerRequisicao('POST', '/salas', dados);
+            statusTestes.criarSala = resultado.sucesso;
+            mostrarResultado('criar-sala-result', resultado.dados || resultado.erro, resultado.sucesso);
+            atualizarStatus();
+        }
+
+        async function atualizarSala() {
+            const id = document.getElementById('update-sala-id').value;
+            const nome = document.getElementById('update-sala-nome').value;
+            
+            if (!id) {
+                mostrarResultado('update-sala-result', 'ID da sala é obrigatório', false);
+                return;
+            }
+
+            const dados = {
+                id: parseInt(id),
+                nome: nome || 'Sala Atualizada',
+                capacidade: 15,
+                descricao: 'Sala atualizada via teste de API'
+            };
+
+            const resultado = await fazerRequisicao('PUT', `/salas/${id}`, dados);
+            statusTestes.atualizarSala = resultado.sucesso;
+            mostrarResultado('update-sala-result', resultado.dados || resultado.erro, resultado.sucesso);
+            atualizarStatus();
+        }
+
+        async function deletarSala() {
+            const id = document.getElementById('delete-sala-id').value;
+            
+            if (!id) {
+                mostrarResultado('delete-sala-result', 'ID da sala é obrigatório', false);
+                return;
+            }
+
+            const resultado = await fazerRequisicao('DELETE', `/salas/${id}`, { id: parseInt(id) });
+            statusTestes.deletarSala = resultado.sucesso;
+            mostrarResultado('delete-sala-result', resultado.dados || resultado.erro, resultado.sucesso);
+            atualizarStatus();
+        }
+
+        async function listarAgendamentos() {
+            const resultado = await fazerRequisicao('GET', '/agendamentos');
+            statusTestes.listarAgendamentos = resultado.sucesso;
+            mostrarResultado('agendamentos-result', resultado.dados || resultado.erro, resultado.sucesso);
+            atualizarStatus();
+        }
+
+        async function criarAgendamento() {
+            const dados = {
+                sala_id: parseInt(document.getElementById('agend-sala-id').value),
+                usuario_id: parseInt(document.getElementById('agend-usuario-id').value),
+                data_inicio: document.getElementById('agend-inicio').value,
+                data_fim: document.getElementById('agend-fim').value,
+                descricao: document.getElementById('agend-descricao').value,
+                status: 'confirmado'
+            };
+
+            const resultado = await fazerRequisicao('POST', '/agendamentos', dados);
+            statusTestes.criarAgendamento = resultado.sucesso;
+            mostrarResultado('criar-agend-result', resultado.dados || resultado.erro, resultado.sucesso);
+            atualizarStatus();
+        }
+
+        // Inicializar status
+        atualizarStatus();
+    </script>
+</body>
+</html>
