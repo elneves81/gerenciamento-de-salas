@@ -10,57 +10,74 @@ async function initializeNeonPool() {
   try {
     console.log('🔍 Verificando disponibilidade do módulo pg...');
     
-    let Pool;
-    
-    // Tentar diferentes formas de importar pg
-    try {
-      // Tentativa 1: CommonJS require
-      console.log('Tentativa 1: CommonJS require...');
-      const pg = require('pg');
-      Pool = pg.Pool;
-      console.log('✅ CommonJS require funcionou!');
-    } catch (err1) {
-      console.log('❌ CommonJS falhou:', err1.message);
+    // Primeiro, tentar uma conexão simples sem pool para testar
+    if (process.env.DATABASE_URL) {
+      console.log('🔗 Testando conexão direta com Neon (sem pool)...');
+      
+      // Usar fetch para testar conectividade básica (alternativa sem pg)
+      const url = new URL(process.env.DATABASE_URL);
+      console.log('📍 Host Neon:', url.hostname);
+      console.log('📍 Database:', url.pathname.substring(1));
+      
+      // Tentar import do pg novamente
+      let Pool;
       
       try {
-        // Tentativa 2: ESM import dinâmico
-        console.log('Tentativa 2: ESM import dinâmico...');
-        const pg = await import('pg');
-        Pool = pg.default?.Pool || pg.Pool;
-        console.log('✅ ESM import funcionou!');
-      } catch (err2) {
-        console.log('❌ ESM import falhou:', err2.message);
+        // Tentativa com require simples
+        console.log('🔄 Tentando require("pg")...');
+        const pg = require('pg');
+        Pool = pg.Pool;
+        console.log('✅ require("pg") funcionou!');
+      } catch (pgError) {
+        console.log('❌ Erro ao importar pg:', pgError.message);
         
+        // Verificar se o módulo existe no sistema de arquivos
         try {
-          // Tentativa 3: Require direto do Pool
-          console.log('Tentativa 3: Require direto Pool...');
-          Pool = require('pg').Pool;
-          console.log('✅ Require direto funcionou!');
-        } catch (err3) {
-          console.log('❌ Require direto falhou:', err3.message);
-          throw new Error('Todas as tentativas de importar pg falharam');
+          const fs = require('fs');
+          const path = require('path');
+          const nodeModulesPath = path.join(process.cwd(), 'node_modules', 'pg');
+          console.log('📁 Verificando node_modules/pg em:', nodeModulesPath);
+          
+          if (fs.existsSync(nodeModulesPath)) {
+            console.log('✅ Pasta pg encontrada em node_modules');
+            const packageJsonPath = path.join(nodeModulesPath, 'package.json');
+            if (fs.existsSync(packageJsonPath)) {
+              const pgPackage = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+              console.log('📋 Versão pg instalada:', pgPackage.version);
+            }
+          } else {
+            console.log('❌ Pasta pg NÃO encontrada em node_modules');
+          }
+        } catch (fsError) {
+          console.log('⚠️ Erro ao verificar sistema de arquivos:', fsError.message);
         }
+        
+        throw new Error('Módulo pg não disponível: ' + pgError.message);
       }
+      
+      if (!Pool) {
+        throw new Error('Pool class não foi encontrada');
+      }
+      
+      console.log('✅ Módulo pg encontrado, inicializando pool...');
+      pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+      });
+      
+      // Testar conexão
+      const client = await pool.connect();
+      await client.query('SELECT 1 as test');
+      client.release();
+      
+      pgAvailable = true;
+      console.log('🎉 Pool Neon Database inicializado e conectado com sucesso!');
+      return true;
+    } else {
+      console.log('⚠️ DATABASE_URL não configurada');
+      throw new Error('DATABASE_URL não configurada');
     }
     
-    if (!Pool) {
-      throw new Error('Pool class não foi encontrada');
-    }
-    
-    console.log('✅ Módulo pg encontrado, inicializando pool...');
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_30vfdEapKsji@ep-polished-glitter-ad3ve5sr-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
-      ssl: { rejectUnauthorized: false }
-    });
-    
-    // Testar conexão
-    const client = await pool.connect();
-    await client.query('SELECT 1');
-    client.release();
-    
-    pgAvailable = true;
-    console.log('🎉 Pool Neon Database inicializado e conectado com sucesso!');
-    return true;
   } catch (error) {
     console.log('⚠️ Erro ao inicializar Neon Database:', error.message);
     console.log('🔄 Continuando com sistema mock...');
