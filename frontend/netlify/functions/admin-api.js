@@ -46,13 +46,17 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('🚀 SalaFacil API called:', event.httpMethod, event.path);
+    console.log('🚀 SalaFacil API called:', event.httpMethod, event.path, event.rawUrl);
+    
+    // Extrair path da URL ou query parameters
+    const pathToCheck = event.path || event.rawUrl || event.queryStringParameters?.path || '';
+    console.log('📍 Path being checked:', pathToCheck);
     
     // ROTEAMENTO DE AUTENTICAÇÃO
-    if (event.path.includes('/auth') || event.path.includes('/api/auth') || 
-        event.path.includes('/login') || event.path.includes('/register') ||
-        event.path.includes('/google-auth') ||
-        (!event.path.includes('/salas') && !event.path.includes('/agendamentos'))) {
+    if (pathToCheck.includes('/auth') || pathToCheck.includes('/api/auth') || 
+        pathToCheck.includes('/login') || pathToCheck.includes('/register') ||
+        pathToCheck.includes('/google-auth') ||
+        (!pathToCheck.includes('/salas') && !pathToCheck.includes('/agendamentos') && !pathToCheck.includes('/test-db'))) {
       
       // Se for GET para auth, verificar usuário logado
       if (event.httpMethod === 'GET') {
@@ -74,17 +78,17 @@ exports.handler = async (event, context) => {
     }
 
     // ROTEAMENTO DE SALAS
-    if (event.path.includes('/salas') || event.path.includes('/get-salas')) {
+    if (pathToCheck.includes('/salas') || pathToCheck.includes('/get-salas')) {
       return await handleSalas(event, headers);
     }
 
     // ROTEAMENTO DE AGENDAMENTOS  
-    if (event.path.includes('/agendamentos')) {
+    if (pathToCheck.includes('/agendamentos')) {
       return await handleAgendamentos(event, headers);
     }
 
     // TESTE DE CONEXÃO COM BANCO
-    if (event.path.includes('/test-db') || event.path.includes('/test-connection')) {
+    if (pathToCheck.includes('/test-db') || pathToCheck.includes('/test-connection')) {
       return await handleTestDb(headers);
     }
 
@@ -576,7 +580,7 @@ async function handleSalas(event, headers) {
     if (event.httpMethod === 'PUT') {
       console.log('✏️ Atualizando sala...');
       
-      const salaId = event.path.split('/').pop();
+      const salaId = pathToCheck.split('/').pop() || event.queryStringParameters?.id;
       const body = JSON.parse(event.body || '{}');
       const { nome, capacidade, localizacao, equipamentos, descricao, preco_hora, ativa } = body;
 
@@ -627,7 +631,7 @@ async function handleSalas(event, headers) {
     if (event.httpMethod === 'DELETE') {
       console.log('🗑️ Deletando sala...');
       
-      const salaId = event.path.split('/').pop();
+      const salaId = pathToCheck.split('/').pop() || event.queryStringParameters?.id;
 
       if (!salaId) {
         return {
@@ -774,7 +778,7 @@ async function handleAgendamentos(event, headers) {
     if (event.httpMethod === 'PUT') {
       console.log('✏️ Atualizando agendamento...');
       
-      const agendamentoId = event.path.split('/').pop();
+      const agendamentoId = pathToCheck.split('/').pop() || event.queryStringParameters?.id;
       const body = JSON.parse(event.body || '{}');
       const { data_inicio, data_fim, descricao, status } = body;
 
@@ -815,7 +819,7 @@ async function handleAgendamentos(event, headers) {
     if (event.httpMethod === 'DELETE') {
       console.log('❌ Cancelando agendamento...');
       
-      const agendamentoId = event.path.split('/').pop();
+      const agendamentoId = pathToCheck.split('/').pop() || event.queryStringParameters?.id;
 
       if (!agendamentoId) {
         return {
