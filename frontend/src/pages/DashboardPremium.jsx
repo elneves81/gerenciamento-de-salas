@@ -70,6 +70,8 @@ import {
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import api from '../services/api';
+import salasService from '../services/salasService';
+import agendamentosService from '../services/agendamentosService';
 import GraficosInterativosSimples from '../components/GraficosInterativosSimples';
 import GoogleCalendarResponsive from '../components/GoogleCalendarResponsive';
 import AdminPanel from '../components/AdminPanel';
@@ -170,42 +172,40 @@ const DashboardPremium = () => {
         return;
       }
 
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Configurar header de autorização
+      api.defaults.headers.common['Authorization'] = `Bearer ${JSON.parse(token)}`;
       
-      const [userResponse, salasResponse, agendamentosResponse] = await Promise.allSettled([
+      // Carregar dados em paralelo usando os novos serviços
+      const [userResult, salasResult, agendamentosResult] = await Promise.allSettled([
         api.get('/auth'),
-        api.get('/get-salas'),
-        api.get('/agendamentos')
+        salasService.listarSalas(),
+        agendamentosService.listarAgendamentos()
       ]);
       
       // Processar resposta do usuário
-      if (userResponse.status === 'fulfilled') {
-        setUserData(userResponse.value.data);
+      if (userResult.status === 'fulfilled') {
+        setUserData(userResult.value.data);
       }
       
       // Processar resposta das salas
       let salasData = [];
-      if (salasResponse.status === 'fulfilled') {
-        const responseData = salasResponse.value.data;
-        salasData = Array.isArray(responseData) ? responseData : 
-                   Array.isArray(responseData?.results) ? responseData.results : 
-                   Object.values(responseData || {}).filter(item => item?.id);
+      if (salasResult.status === 'fulfilled') {
+        salasData = Array.isArray(salasResult.value) ? salasResult.value : [];
         setSalas(salasData);
+        console.log('✅ Salas carregadas no dashboard:', salasData.length);
       } else {
-        console.warn('Erro ao carregar salas:', salasResponse.reason);
+        console.warn('⚠️ Erro ao carregar salas:', salasResult.reason?.message);
         setSalas([]);
       }
       
       // Processar resposta dos agendamentos
       let reservasData = [];
-      if (agendamentosResponse.status === 'fulfilled') {
-        const responseData = agendamentosResponse.value.data;
-        reservasData = Array.isArray(responseData) ? responseData : 
-                      Array.isArray(responseData?.results) ? responseData.results : 
-                      Object.values(responseData || {}).filter(item => item?.id);
+      if (agendamentosResult.status === 'fulfilled') {
+        reservasData = Array.isArray(agendamentosResult.value) ? agendamentosResult.value : [];
         setAllReservas(reservasData);
+        console.log('✅ Agendamentos carregados no dashboard:', reservasData.length);
       } else {
-        console.warn('Erro ao carregar agendamentos:', agendamentosResponse.reason);
+        console.warn('⚠️ Erro ao carregar agendamentos:', agendamentosResult.reason?.message);
         setAllReservas([]);
       }
       

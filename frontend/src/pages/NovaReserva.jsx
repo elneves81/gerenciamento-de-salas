@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../services/api';
+import salasService from '../services/salasService';
+import agendamentosService from '../services/agendamentosService';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Calendar, 
@@ -83,23 +84,16 @@ const NovaReserva = () => {
 
   const loadSalas = async () => {
     try {
-      const response = await api.get('/get-salas/');
-      const data = response.data;
-      
-      // Garantir que sempre temos um array
-      if (Array.isArray(data)) {
-        setSalas(data);
-      } else if (data && Array.isArray(data.results)) {
-        setSalas(data.results);
-      } else if (data && typeof data === 'object') {
-        setSalas(Object.values(data).filter(item => item && item.id));
-      } else {
-        setSalas([]);
-      }
+      setLoading(true);
+      const salasData = await salasService.listarSalas();
+      setSalas(Array.isArray(salasData) ? salasData : []);
+      console.log('✅ Salas carregadas para nova reserva:', salasData?.length || 0);
     } catch (error) {
-      console.error('Erro ao carregar salas:', error);
+      console.error('❌ Erro ao carregar salas:', error);
       setError('Erro ao carregar salas disponíveis');
-      setSalas([]); // Garantir array vazio em caso de erro
+      setSalas([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,17 +108,23 @@ const NovaReserva = () => {
       const dataInicio = new Date(`${formData.data_inicio}T${formData.hora_inicio}`);
       const dataFim = new Date(`${formData.data_fim}T${formData.hora_fim}`);
 
-      const response = await api.post('/reservas/check-availability/', {
-        sala: parseInt(formData.sala),
-        data_inicio: dataInicio.toISOString(),
-        data_fim: dataFim.toISOString()
-      });
+      const disponivel = await agendamentosService.verificarDisponibilidade(
+        parseInt(formData.sala),
+        dataInicio.toISOString(),
+        dataFim.toISOString()
+      );
 
-      setAvailabilityCheck(response.data);
+      setAvailabilityCheck({
+        available: disponivel,
+        message: disponivel ? 
+          'Sala disponível no horário selecionado!' : 
+          'Sala não está disponível neste horário'
+      });
     } catch (error) {
-      setAvailabilityCheck({ 
-        available: false, 
-        message: 'Erro ao verificar disponibilidade' 
+      console.error('❌ Erro ao verificar disponibilidade:', error);
+      setAvailabilityCheck({
+        available: false,
+        message: 'Erro ao verificar disponibilidade'
       });
     } finally {
       setCheckingAvailability(false);
@@ -197,28 +197,28 @@ const NovaReserva = () => {
       const dataInicio = new Date(`${formData.data_inicio}T${formData.hora_inicio}`);
       const dataFim = new Date(`${formData.data_fim}T${formData.hora_fim}`);
 
-      const reservaData = {
-        titulo: formData.titulo,
-        descricao: formData.descricao,
-        sala: parseInt(formData.sala),
+      const agendamentoData = {
+        sala_id: parseInt(formData.sala),
+        usuario_id: user?.id || 1, // Use o ID do usuário logado
         data_inicio: dataInicio.toISOString(),
         data_fim: dataFim.toISOString(),
-        participantes: parseInt(formData.participantes),
-        participantes_emails: formData.participantes_emails,
-        recorrente: formData.recorrente,
-        tipo_recorrencia: formData.recorrente ? formData.tipo_recorrencia : null,
-        fim_recorrencia: formData.recorrente ? formData.fim_recorrencia : null
+        descricao: `${formData.titulo}\n${formData.descricao}`.trim(),
+        status: 'confirmado'
       };
 
-      await api.post('/reservas/', reservaData);
+      console.log('📝 Criando agendamento:', agendamentoData);
+      const result = await agendamentosService.criarAgendamento(agendamentoData);
+      console.log('✅ Agendamento criado:', result);
+      
       setSuccess('Reserva criada com sucesso!');
       
       setTimeout(() => {
         navigate('/reservas');
       }, 2000);
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || 
-                          error.response?.data?.non_field_errors?.[0] ||
+      console.error('❌ Erro ao criar reserva:', error);
+      const errorMessage = error.response?.data?.error || 
+                          error.message ||
                           'Erro ao criar reserva';
       setError(errorMessage);
     } finally {

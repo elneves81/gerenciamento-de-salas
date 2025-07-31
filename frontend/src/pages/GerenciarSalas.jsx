@@ -39,7 +39,7 @@ import {
   Visibility,
   VisibilityOff
 } from '@mui/icons-material';
-import api from '../services/api';
+import salasService from '../services/salasService';
 
 const GerenciarSalas = () => {
   const navigate = useNavigate();
@@ -64,13 +64,13 @@ const GerenciarSalas = () => {
   const loadSalas = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/salas');
-      const salasData = Array.isArray(response.data) ? response.data : response.data?.results || [];
-      setSalas(salasData);
+      const salasData = await salasService.listarSalas();
+      setSalas(Array.isArray(salasData) ? salasData : []);
       setError(null);
     } catch (err) {
       console.error('Erro ao carregar salas:', err);
-      setError('Erro ao carregar salas');
+      setError('Erro ao carregar salas. Verifique sua conexão e tente novamente.');
+      setSalas([]);
     } finally {
       setLoading(false);
     }
@@ -122,19 +122,21 @@ const GerenciarSalas = () => {
         ativa: formData.ativa
       };
 
+      let result;
       if (editingSala) {
-        await api.put(`/salas/${editingSala.id}`, salaData);
+        result = await salasService.atualizarSala(editingSala.id, salaData);
         showSnackbar('Sala atualizada com sucesso!', 'success');
       } else {
-        await api.post('/salas', salaData);
+        result = await salasService.criarSala(salaData);
         showSnackbar('Sala criada com sucesso!', 'success');
       }
 
+      console.log('Operação realizada:', result);
       handleCloseDialog();
       await loadSalas();
     } catch (error) {
       console.error('Erro ao salvar sala:', error);
-      const errorMessage = error.response?.data?.error || error.response?.data?.detail || 'Erro ao salvar sala';
+      const errorMessage = error.response?.data?.error || error.message || 'Erro ao salvar sala';
       showSnackbar(errorMessage, 'error');
     }
   };
@@ -142,12 +144,13 @@ const GerenciarSalas = () => {
   const handleDelete = async (salaId, salaNome) => {
     if (window.confirm(`Tem certeza que deseja excluir a sala "${salaNome}"?`)) {
       try {
-        await api.delete(`/salas/${salaId}`);
+        const result = await salasService.deletarSala(salaId);
+        console.log('Sala deletada:', result);
         showSnackbar('Sala excluída com sucesso!', 'success');
         await loadSalas();
       } catch (error) {
         console.error('Erro ao excluir sala:', error);
-        const errorMessage = error.response?.data?.error || error.response?.data?.detail || 'Erro ao excluir sala';
+        const errorMessage = error.response?.data?.error || error.message || 'Erro ao excluir sala';
         showSnackbar(errorMessage, 'error');
       }
     }
@@ -156,12 +159,14 @@ const GerenciarSalas = () => {
   const handleToggleAtiva = async (sala) => {
     try {
       const updatedSala = { ...sala, ativa: !sala.ativa };
-      await api.put(`/salas/${sala.id}`, updatedSala);
+      const result = await salasService.atualizarSala(sala.id, updatedSala);
+      console.log('Status da sala alterado:', result);
       showSnackbar(`Sala ${updatedSala.ativa ? 'ativada' : 'desativada'} com sucesso!`, 'success');
       await loadSalas();
     } catch (error) {
       console.error('Erro ao alterar status da sala:', error);
-      showSnackbar('Erro ao alterar status da sala', 'error');
+      const errorMessage = error.response?.data?.error || error.message || 'Erro ao alterar status da sala';
+      showSnackbar(errorMessage, 'error');
     }
   };
 

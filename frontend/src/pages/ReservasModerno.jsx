@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import api from '../services/api';
+import agendamentosService from '../services/agendamentosService';
 import { 
   Calendar, 
   Clock, 
@@ -53,20 +53,11 @@ const ReservasModerno = () => {
   const loadReservas = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/agendamentos');
-      const data = response.data;
-      
-      if (Array.isArray(data)) {
-        setReservas(data);
-      } else if (data && Array.isArray(data.results)) {
-        setReservas(data.results);
-      } else if (data && typeof data === 'object') {
-        setReservas(Object.values(data).filter(item => item && item.id));
-      } else {
-        setReservas([]);
-      }
+      const agendamentosData = await agendamentosService.listarAgendamentos();
+      setReservas(Array.isArray(agendamentosData) ? agendamentosData : []);
+      console.log('✅ Agendamentos carregados:', agendamentosData?.length || 0);
     } catch (error) {
-      console.error('Erro ao carregar reservas:', error);
+      console.error('❌ Erro ao carregar reservas:', error);
       setReservas([]);
     } finally {
       setLoading(false);
@@ -81,21 +72,13 @@ const ReservasModerno = () => {
     setDeletingId(reservaId);
     
     try {
-      try {
-        await api.put(`/agendamentos/${reservaId}`, { status: 'cancelada' });
-      } catch (putError) {
-        try {
-          await api.patch(`/agendamentos/${reservaId}`, { status: 'cancelada' });
-        } catch (patchError) {
-          try {
-            await api.delete(`/agendamentos/${reservaId}`);
-          } catch (deleteError) {
-            await api.post(`/agendamentos/${reservaId}/cancelar`);
-          }
-        }
-      }
+      const result = await agendamentosService.cancelarAgendamento(reservaId);
+      console.log('✅ Agendamento cancelado:', result);
       
-      setReservas(prev => prev.filter(r => r.id !== reservaId));
+      // Atualizar lista localmente
+      setReservas(prev => prev.map(r => 
+        r.id === reservaId ? { ...r, status: 'cancelado' } : r
+      ));
       
       // Toast de sucesso
       const toast = document.createElement('div');
