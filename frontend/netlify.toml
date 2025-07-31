@@ -8,6 +8,12 @@
   NODE_VERSION = "18"
 
 [[redirects]]
+  from = "/api/neon-production-api/*"
+  to = "/.netlify/functions/neon-production-api"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/neon-rest-api/*"
   to = "/.netlify/functions/neon-rest-api"
   status = 200
