@@ -9,13 +9,13 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/main-api"
+  to = "/.netlify/functions/admin-api"
   status = 200
   force = true
 
 [[redirects]]
   from = "/admin/*"
-  to = "/.netlify/functions/main-api"
+  to = "/.netlify/functions/admin-api"  
   status = 200
   force = true
 
