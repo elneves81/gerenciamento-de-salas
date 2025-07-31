@@ -800,7 +800,7 @@ async function handleAgendamentos(event, headers) {
       console.log('📝 Criando novo agendamento...');
       
       const body = JSON.parse(event.body || '{}');
-      const { sala_id, usuario_id, data_inicio, data_fim, descricao, status } = body;
+      const { sala_id, usuario_id, data_inicio, data_fim, titulo, descricao, status } = body;
 
       if (!sala_id || !usuario_id || !data_inicio || !data_fim) {
         return {
