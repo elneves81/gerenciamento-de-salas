@@ -42,9 +42,7 @@ import {
 } from '@mui/icons-material';
 
 // Configuração da API
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-site.netlify.app/api' 
-  : 'http://localhost:3000/api';
+const API_BASE_URL = '/api';
 
 function AdminPanel() {
   const [activeTab, setActiveTab] = useState(0);
