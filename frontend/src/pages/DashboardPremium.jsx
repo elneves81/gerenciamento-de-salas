@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
 import {
   Box,
@@ -24,7 +23,6 @@ import {
   Divider,
   LinearProgress,
   Tooltip,
-  Badge,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -38,7 +36,6 @@ import {
   Snackbar,
   Tabs,
   Tab,
-  Collapse,
   Switch
 } from '@mui/material';
 import '../styles/darkMode.css';
@@ -53,47 +50,32 @@ import {
   Schedule,
   Cancel,
   CheckCircle,
-  Warning,
-  Info,
   Settings,
   Analytics,
   Notifications,
   Dashboard as DashboardIcon,
   EventAvailable,
-  EventBusy,
   AccessTime,
   LocationOn,
   DarkMode,
   LightMode,
   Close,
-  PersonAdd,
-  Edit,
-  Delete,
-  Visibility,
-  FilterList,
-  Search,
-  Today,
-  ViewWeek,
-  BarChart,
-  PieChart,
-  ExpandMore,
-  ExpandLess,
   Assessment,
   Logout,
+  Today,
+  BarChart,
   History,
-  Lightbulb
+  Info
 } from '@mui/icons-material';
-import { format, isToday, isTomorrow, parseISO, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import api from '../services/api';
 import GraficosInterativosSimples from '../components/GraficosInterativosSimples';
-import RelatoriosAvancados from '../components/RelatoriosAvancados';
 import GoogleCalendarResponsive from '../components/GoogleCalendarResponsive';
 import AdminPanel from '../components/AdminPanel';
 import NotificationCenter from '../components/NotificationCenter';
 import UserHierarchy from '../components/UserHierarchy';
 import IntegracaoCalendario from '../components/IntegracaoCalendario';
-import DashboardCharts from '../components/DashboardCharts';
 import EmailTemplates from '../components/EmailTemplates';
 import { useNotifications } from '../contexts/NotificationContext';
 import useReunioesAutoUpdate from '../hooks/useReunioesAutoUpdate';
@@ -104,7 +86,7 @@ const DashboardPremium = () => {
   const { addNotification } = useNotifications();
   const isMobile = useMediaQuery('(max-width:768px)');
   
-  // Estados principais
+  // Estados principais consolidados
   const [userData, setUserData] = useState(null);
   const [dashboardData, setDashboardData] = useState({
     total_salas: 0,
@@ -114,39 +96,21 @@ const DashboardPremium = () => {
     proximas_reservas: []
   });
   const [salas, setSalas] = useState([]);
-  const [reservas, setReservas] = useState([]);
+  const [allReservas, setAllReservas] = useState([]);
   const [proximasReservas, setProximasReservas] = useState([]);
   const [reservasHoje, setReservasHoje] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   
-  // Estados de UI
+  // Estados de UI simplificados
   const [darkMode, setDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
-  const [selectedPeriod, setSelectedPeriod] = useState('hoje');
   const [quickActionDialog, setQuickActionDialog] = useState(false);
-  const [notificationDialog, setNotificationDialog] = useState(false);
   const [settingsDialog, setSettingsDialog] = useState(false);
-  const [showTips, setShowTips] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [activeTab, setActiveTab] = useState(0);
-  const [showAnalytics, setShowAnalytics] = useState(false);
-  const [allReservas, setAllReservas] = useState([]);
   
-  // Estados para análises e relatórios
-  const [analytics, setAnalytics] = useState({
-    ocupacao: [],
-    utilizacao: [],
-    tendencias: [],
-    relatorios: []
-  });
-  const [reportData, setReportData] = useState({
-    period: 'week',
-    loading: false,
-    data: []
-  });
-  
-  // Estados para nova reserva rápida
+  // Estado para nova reserva rápida
   const [quickReserva, setQuickReserva] = useState({
     titulo: '',
     sala: '',
@@ -154,7 +118,13 @@ const DashboardPremium = () => {
     data_fim: '',
     participantes: 1
   });
-  
+
+  // Hook para atualização automática de reuniões
+  const { verificarReunioesTerminadas } = useReunioesAutoUpdate(allReservas, (reservaAtualizada) => {
+    setAllReservas(prev => prev.map(r => r.id === reservaAtualizada.id ? reservaAtualizada : r));
+    loadAllData();
+  });
+
   // Função de logout
   const handleLogout = () => {
     logout();
@@ -171,7 +141,7 @@ const DashboardPremium = () => {
   
   // Função para recarregar os dados
   const handleRefresh = () => {
-    setLoading(true);
+    setRefreshing(true);
     loadAllData();
   };
   
@@ -182,7 +152,6 @@ const DashboardPremium = () => {
 
   useEffect(() => {
     loadAllData();
-    // Atualizar dados a cada 30 segundos apenas se o usuário estiver logado
     const interval = setInterval(() => {
       const token = localStorage.getItem('token');
       if (token) {
@@ -191,17 +160,6 @@ const DashboardPremium = () => {
     }, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  // Hook para notificações automáticas
-  // Hook de notificações simplificado
-  const notifyReservationEvent = () => {}; // Função vazia por enquanto
-
-  // Hook para atualização automática de reuniões
-  const { verificarReunioesTerminadas } = useReunioesAutoUpdate(allReservas, (reservaAtualizada) => {
-    // Callback para quando uma reserva é atualizada automaticamente
-    setAllReservas(prev => prev.map(r => r.id === reservaAtualizada.id ? reservaAtualizada : r));
-    loadAllData(); // Recarregar dados para sincronizar
-  });
 
   const loadAllData = async () => {
     try {
@@ -214,7 +172,6 @@ const DashboardPremium = () => {
 
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Carregar dados em paralelo com error handling
       const [userResponse, salasResponse, agendamentosResponse] = await Promise.allSettled([
         api.get('/auth'),
         api.get('/get-salas'),
@@ -230,17 +187,10 @@ const DashboardPremium = () => {
       let salasData = [];
       if (salasResponse.status === 'fulfilled') {
         const responseData = salasResponse.value.data;
-        if (Array.isArray(responseData)) {
-          salasData = responseData;
-        } else if (responseData && Array.isArray(responseData.results)) {
-          salasData = responseData.results;
-        } else if (responseData && typeof responseData === 'object') {
-          // Se for um objeto, tenta extrair array
-          salasData = Object.values(responseData).filter(item => 
-            item && typeof item === 'object' && item.id
-          );
-        }
-        setSalas(Array.isArray(salasData) ? salasData : []);
+        salasData = Array.isArray(responseData) ? responseData : 
+                   Array.isArray(responseData?.results) ? responseData.results : 
+                   Object.values(responseData || {}).filter(item => item?.id);
+        setSalas(salasData);
       } else {
         console.warn('Erro ao carregar salas:', salasResponse.reason);
         setSalas([]);
@@ -250,21 +200,12 @@ const DashboardPremium = () => {
       let reservasData = [];
       if (agendamentosResponse.status === 'fulfilled') {
         const responseData = agendamentosResponse.value.data;
-        if (Array.isArray(responseData)) {
-          reservasData = responseData;
-        } else if (responseData && Array.isArray(responseData.results)) {
-          reservasData = responseData.results;
-        } else if (responseData && typeof responseData === 'object') {
-          // Se for um objeto, tenta extrair array
-          reservasData = Object.values(responseData).filter(item => 
-            item && typeof item === 'object' && item.id
-          );
-        }
-        setReservas(Array.isArray(reservasData) ? reservasData : []);
-        setAllReservas(Array.isArray(reservasData) ? reservasData : []);
+        reservasData = Array.isArray(responseData) ? responseData : 
+                      Array.isArray(responseData?.results) ? responseData.results : 
+                      Object.values(responseData || {}).filter(item => item?.id);
+        setAllReservas(reservasData);
       } else {
         console.warn('Erro ao carregar agendamentos:', agendamentosResponse.reason);
-        setReservas([]);
         setAllReservas([]);
       }
       
@@ -272,13 +213,11 @@ const DashboardPremium = () => {
       const agora = new Date();
       const hoje = agora.toISOString().split('T')[0];
       
-      // Filtrar reservas de hoje
       const reservasHojeFiltered = reservasData.filter(reserva => 
         reserva.data_inicio && reserva.data_inicio.startsWith(hoje)
       );
       setReservasHoje(reservasHojeFiltered);
       
-      // Filtrar próximas reservas (próximos 7 dias)
       const proximosDias = new Date();
       proximosDias.setDate(agora.getDate() + 7);
       
@@ -292,7 +231,6 @@ const DashboardPremium = () => {
       
       setProximasReservas(proximasReservasFiltered);
       
-      // Calcular salas ocupadas agora
       const salasOcupadasAgora = reservasData.filter(reserva => {
         if (!reserva.data_inicio || !reserva.data_fim) return false;
         const inicio = new Date(reserva.data_inicio);
@@ -300,7 +238,6 @@ const DashboardPremium = () => {
         return inicio <= agora && fim >= agora && reserva.status === 'em_andamento';
       }).length;
       
-      // Atualizar dados do dashboard
       setDashboardData({
         total_salas: salasData.length,
         salas_ocupadas_agora: salasOcupadasAgora,
@@ -309,9 +246,6 @@ const DashboardPremium = () => {
         proximas_reservas: proximasReservasFiltered
       });
       
-      // Calcular dados de análise
-      generateAnalyticsData(reservasData, salasData);
-      
       setError(null);
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
@@ -319,48 +253,6 @@ const DashboardPremium = () => {
     } finally {
       setLoading(false);
       setRefreshing(false);
-    }
-  };
-
-  // Função para gerar dados de análise
-  const generateAnalyticsData = (reservasData, salasData) => {
-    try {
-      const hoje = new Date();
-      const ultimos7Dias = Array.from({length: 7}, (_, i) => {
-        const data = new Date(hoje);
-        data.setDate(hoje.getDate() - i);
-        return data.toISOString().split('T')[0];
-      }).reverse();
-      
-      const ocupacaoPorDia = ultimos7Dias.map(dia => {
-        const reservasDoDia = reservasData.filter(r => 
-          r.data_inicio && r.data_inicio.startsWith(dia)
-        );
-        return {
-          dia: format(new Date(dia), 'dd/MM', { locale: ptBR }),
-          ocupacao: reservasDoDia.length,
-          disponivel: salasData.length - reservasDoDia.length
-        };
-      });
-      
-      const utilizacaoPorSala = salasData.map(sala => {
-        const reservasDaSala = reservasData.filter(r => r.sala_id === sala.id);
-        return {
-          sala: sala.nome,
-          total: reservasDaSala.length,
-          ativas: reservasDaSala.filter(r => r.status === 'agendada').length,
-          utilizacao: Math.round((reservasDaSala.length / (reservasData.length || 1)) * 100)
-        };
-      });
-      
-      setAnalytics({
-        ocupacao: ocupacaoPorDia,
-        utilizacao: utilizacaoPorSala,
-        tendencias: reservasData.slice(-10),
-        relatorios: reservasData
-      });
-    } catch (error) {
-      console.error('Erro ao gerar dados de análise:', error);
     }
   };
 
@@ -448,6 +340,20 @@ const DashboardPremium = () => {
     }
   };
 
+  // Memoized calculations para otimizar performance
+  const stats = useMemo(() => ({
+    salas: {
+      total: dashboardData.total_salas,
+      ocupadas: dashboardData.salas_ocupadas_agora,
+      disponiveis: dashboardData.salas_disponiveis_agora
+    },
+    reservas: {
+      hoje: dashboardData.minhas_reservas_hoje,
+      concluidas: allReservas.filter(r => r.status === 'concluida').length,
+      agendadas: allReservas.filter(r => r.status === 'agendada').length
+    }
+  }), [dashboardData, allReservas]);
+
   if (loading) {
     return (
       <Container maxWidth="xl">
@@ -475,19 +381,6 @@ const DashboardPremium = () => {
       </Container>
     );
   }
-
-  // Calcular estatísticas para o dashboard interativo
-  const salasStats = {
-    total: dashboardData.total_salas,
-    ocupadas: dashboardData.salas_ocupadas_agora,
-    disponiveis: dashboardData.salas_disponiveis_agora
-  };
-
-  const reservasStats = {
-    hoje: dashboardData.minhas_reservas_hoje,
-    concluidas: reservas.filter(r => r.status === 'concluida').length,
-    agendadas: reservas.filter(r => r.status === 'agendada').length
-  };
 
   return (
     <Container maxWidth="xl">
@@ -520,7 +413,6 @@ const DashboardPremium = () => {
             </Box>
             
             <Box display="flex" gap={1} alignItems="center">
-              {/* Botão de Logout */}
               <Tooltip title="Sair do Sistema">
                 <Button
                   onClick={handleLogout}
@@ -583,13 +475,13 @@ const DashboardPremium = () => {
                 <Box display="flex" alignItems="center" justifyContent="between">
                   <Box flex={1}>
                     <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-                      {dashboardData?.total_salas || 0}
+                      {stats.salas.total}
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.9 }}>
                       Total de Salas
                     </Typography>
                     <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                      {dashboardData?.salas_disponiveis_agora || 0} disponíveis agora
+                      {stats.salas.disponiveis} disponíveis agora
                     </Typography>
                   </Box>
                   <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
@@ -606,7 +498,7 @@ const DashboardPremium = () => {
                 <Box display="flex" alignItems="center" justifyContent="between">
                   <Box flex={1}>
                     <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-                      {dashboardData?.minhas_reservas_hoje || 0}
+                      {stats.reservas.hoje}
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.9 }}>
                       Minhas Reservas Hoje
@@ -629,13 +521,13 @@ const DashboardPremium = () => {
                 <Box display="flex" alignItems="center" justifyContent="between">
                   <Box flex={1}>
                     <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-                      {dashboardData?.salas_ocupadas_agora || 0}
+                      {stats.salas.ocupadas}
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.9 }}>
                       Salas em Uso
                     </Typography>
                     <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                      {Math.round(((dashboardData?.salas_ocupadas_agora || 0) / (dashboardData?.total_salas || 1)) * 100)}% ocupação
+                      {Math.round((stats.salas.ocupadas / (stats.salas.total || 1)) * 100)}% ocupação
                     </Typography>
                   </Box>
                   <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
@@ -670,7 +562,7 @@ const DashboardPremium = () => {
           </Grid>
         </Grid>
 
-        {/* Tabs de Navegação */}
+        {/* Tabs de Navegação - Simplificadas */}
         <Paper elevation={2} sx={{ mb: 3 }}>
           <Tabs 
             value={activeTab} 
@@ -699,11 +591,6 @@ const DashboardPremium = () => {
               iconPosition={isMobile ? "top" : "start"}
             />
             <Tab 
-              label="Relatórios" 
-              icon={<BarChart />} 
-              iconPosition={isMobile ? "top" : "start"}
-            />
-            <Tab 
               label="Calendário" 
               icon={<CalendarToday />} 
               iconPosition={isMobile ? "top" : "start"}
@@ -724,23 +611,8 @@ const DashboardPremium = () => {
               iconPosition={isMobile ? "top" : "start"}
             />
             <Tab 
-              label="Admin" 
-              icon={<Settings />} 
-              iconPosition={isMobile ? "top" : "start"}
-            />
-            <Tab 
-              label="Usuários" 
-              icon={<People />} 
-              iconPosition={isMobile ? "top" : "start"}
-            />
-            <Tab 
               label="Integração" 
               icon={<Event />} 
-              iconPosition={isMobile ? "top" : "start"}
-            />
-            <Tab 
-              label="Charts" 
-              icon={<TrendingUp />} 
               iconPosition={isMobile ? "top" : "start"}
             />
             <Tab 
@@ -767,7 +639,7 @@ const DashboardPremium = () => {
                       variant="outlined" 
                       size="small"
                       onClick={() => navigate('/reservas')}
-                      startIcon={<Visibility />}
+                      startIcon={<Analytics />}
                     >
                       Ver Todas
                     </Button>
@@ -832,175 +704,21 @@ const DashboardPremium = () => {
                       ))}
                     </List>
                   ) : (
-                    <Box>
-                      {/* Dashboard Interativo quando não há reservas */}
-                      <Grid container spacing={3}>
-                        {/* Ações Rápidas */}
-                        <Grid item xs={12} md={6}>
-                          <Box textAlign="center" p={3} sx={{ 
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            borderRadius: 3,
-                            color: 'white'
-                          }}>
-                            <Add sx={{ fontSize: 40, mb: 1 }} />
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                              Nova Reserva
-                            </Typography>
-                            <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
-                              Agende uma sala rapidamente
-                            </Typography>
-                            <Button 
-                              variant="contained" 
-                              sx={{ 
-                                bgcolor: 'rgba(255,255,255,0.2)',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
-                              }}
-                              onClick={() => setQuickActionDialog(true)}
-                              startIcon={<Add />}
-                            >
-                              Criar Agora
-                            </Button>
-                          </Box>
-                        </Grid>
-
-                        {/* Salas Disponíveis Agora */}
-                        <Grid item xs={12} md={6}>
-                          <Box textAlign="center" p={3} sx={{ 
-                            background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
-                            borderRadius: 3,
-                            color: 'white'
-                          }}>
-                            <MeetingRoom sx={{ fontSize: 40, mb: 1 }} />
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                              Salas Livres
-                            </Typography>
-                            <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
-                              {salasStats.disponiveis} salas disponíveis agora
-                            </Typography>
-                            <Button 
-                              variant="contained"
-                              sx={{ 
-                                bgcolor: 'rgba(255,255,255,0.2)',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
-                              }}
-                              onClick={() => navigate('/reservas')}
-                              startIcon={<Visibility />}
-                            >
-                              Ver Salas
-                            </Button>
-                          </Box>
-                        </Grid>
-
-                        {/* Histórico Recente */}
-                        <Grid item xs={12} md={6}>
-                          <Box textAlign="center" p={3} sx={{ 
-                            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                            borderRadius: 3,
-                            color: 'white'
-                          }}>
-                            <History sx={{ fontSize: 40, mb: 1 }} />
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                              Histórico
-                            </Typography>
-                            <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
-                              {reservasStats.concluidas} reservas concluídas
-                            </Typography>
-                            <Button 
-                              variant="contained"
-                              sx={{ 
-                                bgcolor: 'rgba(255,255,255,0.2)',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
-                              }}
-                              onClick={() => navigate('/reservas?status=concluida')}
-                              startIcon={<BarChart />}
-                            >
-                              Ver Relatório
-                            </Button>
-                          </Box>
-                        </Grid>
-
-                        {/* Dicas e Recursos */}
-                        <Grid item xs={12} md={6}>
-                          <Box textAlign="center" p={3} sx={{ 
-                            background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-                            borderRadius: 3,
-                            color: '#8B4513'
-                          }}>
-                            <Lightbulb sx={{ fontSize: 40, mb: 1 }} />
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                              Dicas do Sistema
-                            </Typography>
-                            <Typography variant="body2" sx={{ mb: 2, opacity: 0.8 }}>
-                              Otimize o uso das suas salas
-                            </Typography>
-                            <Button 
-                              variant="contained"
-                              sx={{ 
-                                bgcolor: 'rgba(139,69,19,0.2)',
-                                color: '#8B4513',
-                                '&:hover': { bgcolor: 'rgba(139,69,19,0.3)' }
-                              }}
-                              onClick={() => setShowTips(true)}
-                              startIcon={<Info />}
-                            >
-                              Ver Dicas
-                            </Button>
-                          </Box>
-                        </Grid>
-
-                        {/* Estatísticas Rápidas */}
-                        <Grid item xs={12}>
-                          <Card sx={{ background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' }}>
-                            <CardContent>
-                              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                                📊 Resumo do Dia
-                              </Typography>
-                              <Grid container spacing={2}>
-                                <Grid item xs={3}>
-                                  <Box textAlign="center">
-                                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                                      {reservasStats.hoje}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      Reservas Hoje
-                                    </Typography>
-                                  </Box>
-                                </Grid>
-                                <Grid item xs={3}>
-                                  <Box textAlign="center">
-                                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#388e3c' }}>
-                                      {salasStats.disponiveis}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      Salas Livres
-                                    </Typography>
-                                  </Box>
-                                </Grid>
-                                <Grid item xs={3}>
-                                  <Box textAlign="center">
-                                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
-                                      {salasStats.ocupadas}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      Em Uso
-                                    </Typography>
-                                  </Box>
-                                </Grid>
-                                <Grid item xs={3}>
-                                  <Box textAlign="center">
-                                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#7b1fa2' }}>
-                                      {Math.round((salasStats.ocupadas / salasStats.total) * 100) || 0}%
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      Ocupação
-                                    </Typography>
-                                  </Box>
-                                </Grid>
-                              </Grid>
-                            </CardContent>
-                          </Card>
-                        </Grid>
-                      </Grid>
+                    <Box textAlign="center" py={4}>
+                      <History sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.3, mb: 2 }} />
+                      <Typography variant="h6" gutterBottom>
+                        Nenhuma reserva próxima
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Você não tem reservas agendadas no momento
+                      </Typography>
+                      <Button 
+                        variant="contained" 
+                        startIcon={<Add />}
+                        onClick={() => setQuickActionDialog(true)}
+                      >
+                        Criar Nova Reserva
+                      </Button>
                     </Box>
                   )}
                 </CardContent>
@@ -1046,19 +764,9 @@ const DashboardPremium = () => {
                             fullWidth
                             variant="outlined"
                             startIcon={<MeetingRoom />}
-                            onClick={() => navigate('/salas')}
-                          >
-                            Ver Salas
-                          </Button>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Button
-                            fullWidth
-                            variant="outlined"
-                            startIcon={<Settings />}
                             onClick={() => navigate('/gerenciar-salas')}
                           >
-                            Gerenciar Salas
+                            Ver Salas
                           </Button>
                         </Grid>
                         <Grid item xs={6}>
@@ -1088,22 +796,22 @@ const DashboardPremium = () => {
                         <Box display="flex" justifyContent="between" alignItems="center" sx={{ mb: 1 }}>
                           <Typography variant="body2">Ocupação Atual</Typography>
                           <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                            {Math.round(((dashboardData?.salas_ocupadas_agora || 0) / (dashboardData?.total_salas || 1)) * 100)}%
+                            {Math.round((stats.salas.ocupadas / (stats.salas.total || 1)) * 100)}%
                           </Typography>
                         </Box>
                         <LinearProgress 
                           variant="determinate" 
-                          value={((dashboardData?.salas_ocupadas_agora || 0) / (dashboardData?.total_salas || 1)) * 100}
+                          value={(stats.salas.ocupadas / (stats.salas.total || 1)) * 100}
                           sx={{ height: 8, borderRadius: 4 }}
                         />
                       </Box>
                       
                       <Box display="flex" justifyContent="between" sx={{ mb: 1 }}>
                         <Typography variant="body2" color="success.main">
-                          ● Disponíveis: {dashboardData?.salas_disponiveis_agora || 0}
+                          ● Disponíveis: {stats.salas.disponiveis}
                         </Typography>
                         <Typography variant="body2" color="error.main">
-                          ● Ocupadas: {dashboardData?.salas_ocupadas_agora || 0}
+                          ● Ocupadas: {stats.salas.ocupadas}
                         </Typography>
                       </Box>
                     </CardContent>
@@ -1149,565 +857,89 @@ const DashboardPremium = () => {
 
         {/* Tab de Análises */}
         {activeTab === 1 && (
-          <Grid container spacing={3}>
-            {/* Gráfico de Ocupação por Dia */}
-            <Grid item xs={12} lg={8}>
-              <Card elevation={3}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <BarChart sx={{ mr: 1, verticalAlign: 'middle' }} />
-                    Ocupação dos Últimos 7 Dias
-                  </Typography>
-                  {analytics.ocupacao?.length > 0 ? (
-                    <Box sx={{ mt: 2 }}>
-                      {analytics.ocupacao.map((item, index) => (
-                        <Box key={index} sx={{ mb: 2 }}>
-                          <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                              {item.dia}
-                            </Typography>
-                            <Typography variant="body2" color="primary" sx={{ fontWeight: 'bold' }}>
-                              {item.ocupacao} reservas
-                            </Typography>
-                          </Box>
-                          <LinearProgress 
-                            variant="determinate" 
-                            value={Math.min((item.ocupacao / (salas.length || 1)) * 100, 100)}
-                            sx={{ 
-                              height: 8, 
-                              borderRadius: 4,
-                              backgroundColor: 'rgba(0,0,0,0.1)',
-                              '& .MuiLinearProgress-bar': {
-                                borderRadius: 4,
-                                background: `linear-gradient(45deg, #667eea 30%, #764ba2 90%)`
-                              }
-                            }}
-                          />
-                        </Box>
-                      ))}
-                    </Box>
-                  ) : (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h5" gutterBottom>
+              Análises e Métricas
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Card elevation={3}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Ocupação das Salas
+                    </Typography>
                     <Box sx={{ py: 4, textAlign: 'center' }}>
                       <BarChart sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.3, mb: 2 }} />
                       <Typography variant="body1" color="text.secondary">
-                        Dados de análise indisponíveis
+                        Dados de análise em desenvolvimento
                       </Typography>
                     </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Utilização por Sala */}
-            <Grid item xs={12} lg={4}>
-              <Card elevation={3}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <PieChart sx={{ mr: 1, verticalAlign: 'middle' }} />
-                    Utilização por Sala
-                  </Typography>
-                  {analytics.utilizacao?.length > 0 ? (
-                    <List dense>
-                      {analytics.utilizacao.slice(0, 6).map((sala, index) => (
-                        <ListItem key={index} sx={{ px: 0 }}>
-                          <ListItemAvatar>
-                            <Avatar 
-                              sx={{ 
-                                bgcolor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
-                                width: 32,
-                                height: 32
-                              }}
-                            >
-                              <MeetingRoom sx={{ fontSize: 16 }} />
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={
-                              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                {sala.sala}
-                              </Typography>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography variant="caption" color="text.secondary">
-                                  {sala.total} reservas • {sala.ativas} ativas
-                                </Typography>
-                                <LinearProgress
-                                  variant="determinate"
-                                  value={sala.utilizacao}
-                                  sx={{ 
-                                    mt: 0.5, 
-                                    height: 4, 
-                                    borderRadius: 2,
-                                    backgroundColor: 'rgba(0,0,0,0.1)',
-                                    '& .MuiLinearProgress-bar': {
-                                      borderRadius: 2,
-                                      backgroundColor: `hsl(${(index * 60) % 360}, 70%, 50%)`
-                                    }
-                                  }}
-                                />
-                              </Box>
-                            }
-                          />
-                          <Typography variant="caption" color="primary" sx={{ fontWeight: 'bold', ml: 1 }}>
-                            {sala.utilizacao}%
-                          </Typography>
-                        </ListItem>
-                      ))}
-                    </List>
-                  ) : (
-                    <Box sx={{ py: 4, textAlign: 'center' }}>
-                      <PieChart sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.3, mb: 2 }} />
-                      <Typography variant="body2" color="text.secondary">
-                        Nenhum dado disponível
-                      </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Tendências Recentes */}
-            <Grid item xs={12}>
-              <Card elevation={3}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <TrendingUp sx={{ mr: 1, verticalAlign: 'middle' }} />
-                    Atividade Recente
-                  </Typography>
-                  {analytics.tendencias?.length > 0 ? (
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card elevation={3}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Estatísticas Gerais
+                    </Typography>
                     <List>
-                      {analytics.tendencias.slice(0, 5).map((reserva, index) => (
-                        <React.Fragment key={reserva.id}>
-                          <ListItem alignItems="flex-start">
-                            <ListItemAvatar>
-                              <Avatar sx={{ bgcolor: getStatusColor(reserva.status) + '.main' }}>
-                                {getStatusIcon(reserva.status)}
-                              </Avatar>
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={
-                                <Box display="flex" alignItems="center" gap={1}>
-                                  <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                                    {reserva.titulo}
-                                  </Typography>
-                                  <Chip 
-                                    label={reserva.status} 
-                                    color={getStatusColor(reserva.status)}
-                                    size="small"
-                                  />
-                                </Box>
-                              }
-                              secondary={
-                                <Box sx={{ mt: 0.5 }}>
-                                  <Typography variant="body2" color="text.secondary">
-                                    📍 {reserva.sala_nome} • ⏰ {formatDateTime(reserva.data_inicio)}
-                                  </Typography>
-                                </Box>
-                              }
-                            />
-                          </ListItem>
-                          {index < analytics.tendencias.length - 1 && <Divider variant="inset" component="li" />}
-                        </React.Fragment>
-                      ))}
+                      <ListItem>
+                        <ListItemText 
+                          primary="Total de Reservas" 
+                          secondary={`${allReservas.length} reservas no sistema`}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText 
+                          primary="Taxa de Ocupação" 
+                          secondary={`${Math.round((stats.salas.ocupadas / (stats.salas.total || 1)) * 100)}% das salas em uso`}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText 
+                          primary="Reservas Hoje" 
+                          secondary={`${reservasHoje.length} reservas agendadas`}
+                        />
+                      </ListItem>
                     </List>
-                  ) : (
-                    <Box sx={{ py: 4, textAlign: 'center' }}>
-                      <Analytics sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.3, mb: 2 }} />
-                      <Typography variant="body1" color="text.secondary">
-                        Nenhuma atividade recente
-                      </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
-          </Grid>
-        )}
-
-        {/* Tab de Relatórios */}
-        {activeTab === 2 && (
-          <Grid container spacing={3}>
-            {/* Controles de Filtro */}
-            <Grid item xs={12}>
-              <Card elevation={2} sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                      <FilterList sx={{ mr: 1, verticalAlign: 'middle' }} />
-                      Filtros de Relatório
-                    </Typography>
-                    <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
-                      <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <InputLabel>Período</InputLabel>
-                        <Select
-                          value={reportData.period}
-                          onChange={(e) => setReportData({...reportData, period: e.target.value})}
-                        >
-                          <MenuItem value="week">Esta Semana</MenuItem>
-                          <MenuItem value="month">Este Mês</MenuItem>
-                          <MenuItem value="quarter">Este Trimestre</MenuItem>
-                          <MenuItem value="year">Este Ano</MenuItem>
-                        </Select>
-                      </FormControl>
-                      <Button
-                        variant="contained"
-                        startIcon={<Refresh />}
-                        onClick={loadAllData}
-                        disabled={refreshing}
-                        size="small"
-                      >
-                        Atualizar
-                      </Button>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Métricas Principais */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Card elevation={3} sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48, mx: 'auto', mb: 1 }}>
-                    <Event sx={{ fontSize: 24 }} />
-                  </Avatar>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                    {allReservas.length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Total de Reservas
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Card elevation={3} sx={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48, mx: 'auto', mb: 1 }}>
-                    <CheckCircle sx={{ fontSize: 24 }} />
-                  </Avatar>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                    {allReservas.filter(r => r.status === 'agendada').length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Reservas Ativas
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Card elevation={3} sx={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: 'white' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48, mx: 'auto', mb: 1 }}>
-                    <Schedule sx={{ fontSize: 24 }} />
-                  </Avatar>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                    {allReservas.filter(r => r.status === 'em_andamento').length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Em Andamento
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Card elevation={3} sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48, mx: 'auto', mb: 1 }}>
-                    <Cancel sx={{ fontSize: 24 }} />
-                  </Avatar>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                    {allReservas.filter(r => r.status === 'cancelada').length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Canceladas
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Relatório de Ocupação */}
-            <Grid item xs={12} md={6}>
-              <Card elevation={3}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <BarChart sx={{ mr: 1, verticalAlign: 'middle' }} />
-                    Relatório de Ocupação
-                  </Typography>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Taxa de ocupação geral do sistema
-                    </Typography>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={((dashboardData?.salas_ocupadas_agora || 0) / (dashboardData?.total_salas || 1)) * 100}
-                      sx={{ 
-                        height: 12, 
-                        borderRadius: 6, 
-                        mb: 1,
-                        backgroundColor: 'rgba(0,0,0,0.1)',
-                        '& .MuiLinearProgress-bar': {
-                          borderRadius: 6,
-                          background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)'
-                        }
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      {Math.round(((dashboardData?.salas_ocupadas_agora || 0) / (dashboardData?.total_salas || 1)) * 100)}% das salas estão ocupadas
-                    </Typography>
-                  </Box>
-                  
-                  <Divider sx={{ my: 2 }} />
-                  
-                  <Grid container spacing={2}>
-                    <Grid item xs={6}>
-                      <Box textAlign="center" sx={{ p: 1, borderRadius: 2, bgcolor: 'success.light', color: 'success.contrastText' }}>
-                        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                          {dashboardData?.salas_disponiveis_agora || 0}
-                        </Typography>
-                        <Typography variant="body2">
-                          Disponíveis
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Box textAlign="center" sx={{ p: 1, borderRadius: 2, bgcolor: 'error.light', color: 'error.contrastText' }}>
-                        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                          {dashboardData?.salas_ocupadas_agora || 0}
-                        </Typography>
-                        <Typography variant="body2">
-                          Ocupadas
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Atividade do Sistema */}
-            <Grid item xs={12} md={6}>
-              <Card elevation={3}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <Analytics sx={{ mr: 1, verticalAlign: 'middle' }} />
-                    Atividade do Sistema
-                  </Typography>
-                  
-                  <List dense>
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
-                          <Event sx={{ fontSize: 20 }} />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                            Total de Reservas
-                          </Typography>
-                        }
-                        secondary={`${allReservas.length} reservas registradas no sistema`}
-                      />
-                      <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
-                        {allReservas.length}
-                      </Typography>
-                    </ListItem>
-                    
-                    <Divider variant="inset" component="li" />
-                    
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>
-                          <CheckCircle sx={{ fontSize: 20 }} />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                            Taxa de Sucesso
-                          </Typography>
-                        }
-                        secondary={`${Math.round((allReservas.filter(r => r.status !== 'cancelada').length / (allReservas.length || 1)) * 100)}% das reservas não foram canceladas`}
-                      />
-                      <Typography variant="h6" color="success.main" sx={{ fontWeight: 'bold' }}>
-                        {Math.round((allReservas.filter(r => r.status !== 'cancelada').length / (allReservas.length || 1)) * 100)}%
-                      </Typography>
-                    </ListItem>
-                    
-                    <Divider variant="inset" component="li" />
-                    
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'info.main', width: 40, height: 40 }}>
-                          <Today sx={{ fontSize: 20 }} />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                            Reservas Hoje
-                          </Typography>
-                        }
-                        secondary={`${reservasHoje.length} reservas agendadas para hoje`}
-                      />
-                      <Typography variant="h6" color="info.main" sx={{ fontWeight: 'bold' }}>
-                        {reservasHoje.length}
-                      </Typography>
-                    </ListItem>
-                  </List>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Relatório Detalhado */}
-            <Grid item xs={12}>
-              <Card elevation={3}>
-                <CardContent>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                      <Assessment sx={{ mr: 1, verticalAlign: 'middle' }} />
-                      Relatório Detalhado
-                    </Typography>
-                    <Box display="flex" gap={1}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => setShowAnalytics(!showAnalytics)}
-                        endIcon={showAnalytics ? <ExpandLess /> : <ExpandMore />}
-                      >
-                        {showAnalytics ? 'Ocultar' : 'Mostrar'} Detalhes
-                      </Button>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<Analytics />}
-                        onClick={() => navigate('/relatorios')}
-                      >
-                        Ver Relatório Completo
-                      </Button>
-                    </Box>
-                  </Box>
-                  
-                  <Collapse in={showAnalytics}>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6} md={3}>
-                        <Paper 
-                          elevation={2} 
-                          sx={{ 
-                            p: 2, 
-                            textAlign: 'center', 
-                            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
-                            border: '1px solid rgba(102, 126, 234, 0.2)'
-                          }}
-                        >
-                          <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                            {Math.round(allReservas.length / (salas.length || 1))}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Média de reservas por sala
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      
-                      <Grid item xs={12} sm={6} md={3}>
-                        <Paper 
-                          elevation={2} 
-                          sx={{ 
-                            p: 2, 
-                            textAlign: 'center',
-                            background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(56, 142, 60, 0.1) 100%)',
-                            border: '1px solid rgba(76, 175, 80, 0.2)'
-                          }}
-                        >
-                          <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                            {Math.round((allReservas.filter(r => r.status !== 'cancelada').length / (allReservas.length || 1)) * 100)}%
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Taxa de sucesso
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      
-                      <Grid item xs={12} sm={6} md={3}>
-                        <Paper 
-                          elevation={2} 
-                          sx={{ 
-                            p: 2, 
-                            textAlign: 'center',
-                            background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(21, 101, 192, 0.1) 100%)',
-                            border: '1px solid rgba(33, 150, 243, 0.2)'
-                          }}
-                        >
-                          <Typography variant="h4" color="info.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                            {reservasHoje.length}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Reservas hoje
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      
-                      <Grid item xs={12} sm={6} md={3}>
-                        <Paper 
-                          elevation={2} 
-                          sx={{ 
-                            p: 2, 
-                            textAlign: 'center',
-                            background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(245, 124, 0, 0.1) 100%)',
-                            border: '1px solid rgba(255, 152, 0, 0.2)'
-                          }}
-                        >
-                          <Typography variant="h4" color="warning.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                            {proximasReservas.length}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Próximas reservas
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                    </Grid>
-                  </Collapse>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+          </Box>
         )}
 
         {/* Tab de Calendário */}
-        {activeTab === 3 && (
+        {activeTab === 2 && (
           <Box sx={{ mt: 2, height: { xs: 'auto', md: '70vh' } }}>
             <GoogleCalendarResponsive reservas={allReservas} salas={salas} />
           </Box>
         )}
 
         {/* Tab de Gráficos */}
-        {activeTab === 4 && (
+        {activeTab === 3 && (
           <Box sx={{ mt: 2 }}>
             <GraficosInterativosSimples reservas={allReservas} salas={salas} />
           </Box>
         )}
 
         {/* Tab de Admin */}
-        {activeTab === 5 && (
+        {activeTab === 4 && (
           <Box sx={{ mt: 2 }}>
             <AdminPanel />
           </Box>
         )}
 
         {/* Tab de Usuários */}
-        {activeTab === 6 && (
+        {activeTab === 5 && (
           <Box sx={{ mt: 2 }}>
             <UserHierarchy />
           </Box>
         )}
 
-        {/* Tab de Integração de Calendário */}
-        {activeTab === 7 && (
+        {/* Tab de Integração */}
+        {activeTab === 6 && (
           <Box sx={{ mt: 2 }}>
             <IntegracaoCalendario 
               reservas={allReservas} 
@@ -1719,42 +951,10 @@ const DashboardPremium = () => {
           </Box>
         )}
 
-        {/* Tab de Charts Avançados */}
-        {activeTab === 8 && (
-          <Box sx={{ mt: 2 }}>
-            <DashboardCharts 
-              dashboardData={dashboardData}
-              reservas={allReservas}
-              salas={salas}
-            />
-          </Box>
-        )}
-
-        {/* Tab de Email Templates */}
-        {activeTab === 9 && (
+        {/* Tab de Email */}
+        {activeTab === 7 && (
           <Box sx={{ mt: 2 }}>
             <EmailTemplates />
-          </Box>
-        )}
-
-        {/* Tab de Calendário Responsivo */}
-        {activeTab === 3 && (
-          <Box sx={{ mt: 2 }}>
-            <GoogleCalendarResponsive reservas={allReservas} salas={salas} />
-          </Box>
-        )}
-
-        {/* Tab de Admin */}
-        {activeTab === 5 && (
-          <Box sx={{ mt: 2 }}>
-            <AdminPanel />
-          </Box>
-        )}
-
-        {/* Tab de Usuários */}
-        {activeTab === 6 && (
-          <Box sx={{ mt: 2 }}>
-            <UserHierarchy />
           </Box>
         )}
 
@@ -1827,66 +1027,6 @@ const DashboardPremium = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Snackbar para notificações */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar({...snackbar, open: false})}
-        >
-          <Alert severity={snackbar.severity} onClose={() => setSnackbar({...snackbar, open: false})}>
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-
-        {/* Diálogo de Notificações */}
-        <Dialog open={notificationDialog} onClose={() => setNotificationDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Typography variant="h6">Notificações</Typography>
-              <IconButton onClick={() => setNotificationDialog(false)} size="small">
-                <Close />
-              </IconButton>
-            </Box>
-          </DialogTitle>
-          <DialogContent dividers>
-            {proximasReservas.length > 0 ? (
-              <List>
-                {proximasReservas.slice(0, 5).map((reserva) => (
-                  <ListItem key={reserva.id} alignItems="flex-start">
-                    <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: getStatusColor(reserva.status) + '.main' }}>
-                        {getStatusIcon(reserva.status)}
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={reserva.titulo}
-                      secondary={
-                        <>
-                          <Typography component="span" variant="body2" color="text.primary">
-                            {reserva.sala_nome}
-                          </Typography>
-                          {" — "}
-                          {formatDateTime(reserva.data_inicio)}
-                        </>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Box sx={{ py: 4, textAlign: 'center' }}>
-                <Notifications sx={{ fontSize: 60, color: 'text.secondary', mb: 2, opacity: 0.3 }} />
-                <Typography variant="body1" color="text.secondary">
-                  Nenhuma notificação no momento
-                </Typography>
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setNotificationDialog(false)}>Fechar</Button>
-          </DialogActions>
-        </Dialog>
-
         {/* Diálogo de Configurações */}
         <Dialog open={settingsDialog} onClose={() => setSettingsDialog(false)} maxWidth="sm" fullWidth>
           <DialogTitle>
@@ -1931,7 +1071,7 @@ const DashboardPremium = () => {
               <ListItem>
                 <ListItemText 
                   primary="Versão do Sistema" 
-                  secondary="SalaFácil v1.0.0"
+                  secondary="SalaFácil v2.0.0 - Otimizado"
                 />
               </ListItem>
             </List>
