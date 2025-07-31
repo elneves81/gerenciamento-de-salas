@@ -12,8 +12,6 @@ from .serializers import (
     SalaSerializer, ReservaSerializer, ReservaCreateSerializer, 
     UsuarioSerializer, PerfilUsuarioSerializer
 )
-# Importar modelos de notificação
-from chat.models import Notification
 
 class AuthView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -78,92 +76,9 @@ class UserProfileView(APIView):
         })
 
 class SalaViewSet(viewsets.ModelViewSet):
-    queryset = Sala.objects.all()
+    queryset = Sala.objects.filter(ativa=True)
     serializer_class = SalaSerializer
     permission_classes = [permissions.AllowAny]  # Temporário para debug
-    
-    def get_queryset(self):
-        # Para listagem/gerenciamento, mostrar todas as salas
-        # Para busca de disponibilidade, filtrar apenas ativas
-        if self.action in ['list', 'retrieve', 'create', 'update', 'partial_update', 'destroy']:
-            return Sala.objects.all()
-        return Sala.objects.filter(ativa=True)
-    
-    def create(self, request, *args, **kwargs):
-        """Criar sala e enviar notificação"""
-        response = super().create(request, *args, **kwargs)
-        
-        if response.status_code == status.HTTP_201_CREATED:
-            sala = Sala.objects.get(id=response.data['id'])
-            self._create_notification(
-                request.user,
-                f"Sala '{sala.nome}' criada com sucesso",
-                f"A sala {sala.nome} (Capacidade: {sala.capacidade}) foi criada com sucesso.",
-                'system',
-                'medium'
-            )
-        
-        return response
-    
-    def update(self, request, *args, **kwargs):
-        """Atualizar sala e enviar notificação"""
-        sala_anterior = self.get_object()
-        nome_anterior = sala_anterior.nome
-        
-        response = super().update(request, *args, **kwargs)
-        
-        if response.status_code == status.HTTP_200_OK:
-            sala_atualizada = self.get_object()
-            self._create_notification(
-                request.user,
-                f"Sala '{sala_atualizada.nome}' atualizada",
-                f"A sala {nome_anterior} foi atualizada com sucesso.",
-                'system',
-                'medium'
-            )
-        
-        return response
-    
-    def destroy(self, request, *args, **kwargs):
-        """Excluir sala e enviar notificação"""
-        sala = self.get_object()
-        nome_sala = sala.nome
-        
-        response = super().destroy(request, *args, **kwargs)
-        
-        if response.status_code == status.HTTP_204_NO_CONTENT:
-            self._create_notification(
-                request.user,
-                f"Sala '{nome_sala}' excluída",
-                f"A sala {nome_sala} foi excluída com sucesso do sistema.",
-                'warning',
-                'medium'
-            )
-        
-        return response
-    
-    def _create_notification(self, user, title, message, notification_type, priority):
-        """Método auxiliar para criar notificações"""
-        try:
-            # Se não há usuário autenticado, criar notificação para o admin (ID 1)
-            if not user or not user.is_authenticated:
-                admin_user = User.objects.filter(is_superuser=True).first()
-                if admin_user:
-                    user = admin_user
-                else:
-                    print("Nenhum usuário admin encontrado para notificação")
-                    return
-            
-            Notification.objects.create(
-                recipient=user,
-                title=title,
-                message=message,
-                notification_type=notification_type,
-                priority=priority
-            )
-            print(f"✅ Notificação criada: {title} para {user.username}")
-        except Exception as e:
-            print(f"❌ Erro ao criar notificação: {e}")
     
     @action(detail=True, methods=['get'])
     def agenda(self, request, pk=None):

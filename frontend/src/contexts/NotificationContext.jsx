@@ -161,7 +161,7 @@ export const NotificationProvider = ({ children }) => {
   }, []);
 
   // Contar notificações não lidas
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = (notifications || []).filter(n => n && !n.read).length;
 
   // Carregar notificações ao montar
   useEffect(() => {

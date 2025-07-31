@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { useMediaQuery } from '@mui/material';
 import {
   Box,
   Grid,
@@ -95,6 +96,7 @@ const DashboardPremium = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { addNotification } = useNotifications();
+  const isMobile = useMediaQuery('(max-width:768px)');
   
   // Estados principais
   const [userData, setUserData] = useState(null);

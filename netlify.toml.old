@@ -1,0 +1,26 @@
+# Netlify Configuration - Ultra Simples  
+[build]
+  base = "frontend"
+  command = "rm -rf dist node_modules && npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Functions dentro do frontend
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "zisi"
+
+# Redirects com prioridade correta  
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# SPA fallback - excluir paths específicos
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false

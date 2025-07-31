@@ -6,9 +6,7 @@ from datetime import datetime
 class Sala(models.Model):
     nome = models.CharField(max_length=100, unique=True)
     capacidade = models.PositiveIntegerField()
-    descricao = models.TextField(blank=True, help_text="Descrição da sala")
     recursos = models.TextField(blank=True, help_text="Ex: Projetor, TV, Lousa")
-    localizacao = models.CharField(max_length=200, blank=True, help_text="Ex: 1º Andar, Ala A")
     ativa = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     

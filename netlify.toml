@@ -1,26 +1,56 @@
-# Netlify Configuration - Ultra Simples  
+# Netlify Configuration - SalaFácil
 [build]
   base = "frontend"
-  command = "rm -rf dist node_modules && npm ci && npm run build"
+  command = "npm install --prefix .. && rm -f package-lock.json && npm install && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18"
 
-# Functions dentro do frontend
+# Netlify Functions (Backend)
 [functions]
-  directory = "netlify/functions"
-  node_bundler = "zisi"
+  directory = "../netlify/functions"
 
-# Redirects com prioridade correta  
+# Variáveis de ambiente para desenvolvimento local
+[context.development.environment]
+  DATABASE_URL = "sua-connection-string-neon-aqui"
+  JWT_SECRET = "sua-chave-jwt-super-secreta-aqui"
+
+# Variáveis de ambiente para produção (configurar no Netlify Dashboard)
+# [context.production.environment]
+  # NODE_ENV removido para permitir devDependencies no build
+
+# Redirects for SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# API redirects
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
-# SPA fallback - excluir paths específicos
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
+# Headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# CORS for API
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"

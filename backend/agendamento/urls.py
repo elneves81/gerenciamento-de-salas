@@ -11,7 +11,4 @@ urlpatterns = [
     path('', include(router.urls)),
     path('auth/login/', views.AuthView.as_view(), name='auth_login'),
     path('auth/user/', views.UserProfileView.as_view(), name='user_profile'),
-    
-    # URLs do sistema administrativo
-    path('', include('agendamento.admin_urls')),
 ]
