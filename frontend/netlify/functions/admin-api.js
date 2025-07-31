@@ -6,12 +6,25 @@ const JWT_SECRET = process.env.JWT_SECRET || 'sua-chave-secreta-muito-segura';
 
 // Configuração do banco Google Cloud SQL
 const getDbClient = () => {
-  return new Client({
+  // Configuração de fallback robusta
+  const dbConfig = {
     connectionString: process.env.DATABASE_URL,
     ssl: {
       rejectUnauthorized: false
     }
-  });
+  };
+
+  // Configuração alternativa se DATABASE_URL falhar
+  if (!process.env.DATABASE_URL) {
+    dbConfig.host = '34.95.225.183';
+    dbConfig.port = 5432;
+    dbConfig.database = 'salafacil';
+    dbConfig.user = 'salafacil_user';
+    dbConfig.password = 'elber@2025';
+    dbConfig.ssl = { rejectUnauthorized: false };
+  }
+
+  return new Client(dbConfig);
 };
 
 exports.handler = async (event, context) => {
@@ -68,6 +81,11 @@ exports.handler = async (event, context) => {
     // ROTEAMENTO DE AGENDAMENTOS  
     if (event.path.includes('/agendamentos')) {
       return await handleAgendamentos(event, headers);
+    }
+
+    // TESTE DE CONEXÃO COM BANCO
+    if (event.path.includes('/test-db') || event.path.includes('/test-connection')) {
+      return await handleTestDb(headers);
     }
 
     // Endpoint padrão
@@ -419,6 +437,61 @@ async function handleGoogleAuth(body, headers) {
       }
     })
   };
+}
+
+// Função de teste de conexão com banco
+async function handleTestDb(headers) {
+  console.log('🔧 Testando conexão com banco...');
+  
+  const client = getDbClient();
+  
+  try {
+    await client.connect();
+    console.log('✅ Conexão estabelecida!');
+    
+    // Teste básico
+    const result = await client.query('SELECT NOW() as timestamp, version() as pg_version');
+    const stats = await client.query('SELECT COUNT(*) as total_usuarios FROM usuarios');
+    const salasCount = await client.query('SELECT COUNT(*) as total_salas FROM salas');
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: true,
+        message: 'Conexão com Google Cloud SQL estabelecida!',
+        database_info: {
+          timestamp: result.rows[0].timestamp,
+          postgres_version: result.rows[0].pg_version,
+          total_usuarios: stats.rows[0].total_usuarios,
+          total_salas: salasCount.rows[0].total_salas
+        },
+        connection_details: {
+          database_url_exists: !!process.env.DATABASE_URL,
+          database_url_preview: process.env.DATABASE_URL ? 
+            process.env.DATABASE_URL.substring(0, 20) + '...' : 'não definida'
+        }
+      })
+    };
+  } catch (dbError) {
+    console.error('❌ Erro de conexão:', dbError);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        success: false,
+        error: 'Erro de conexão com banco',
+        details: dbError.message,
+        connection_info: {
+          database_url_exists: !!process.env.DATABASE_URL,
+          error_code: dbError.code,
+          error_severity: dbError.severity
+        }
+      })
+    };
+  } finally {
+    try { await client.end(); } catch {}
+  }
 }
 
 // Funções de salas conectadas ao Google Cloud SQL
