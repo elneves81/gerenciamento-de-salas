@@ -7,17 +7,9 @@
 [build.environment]
   NODE_VERSION = "18"
 
-[[redirects]]
-  from = "/api/neon-production-api/*"
-  to = "/.netlify/functions/neon-production-api"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/neon-rest-api/*"
-  to = "/.netlify/functions/neon-rest-api"
-  status = 200
-  force = true
+# Plugin para instalar dependências das functions
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
 
 [[redirects]]
   from = "/api/*"
@@ -45,12 +37,6 @@
 
 [[redirects]]
   from = "/register"
-  to = "/.netlify/functions/admin-api"  
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/test-neon"
   to = "/.netlify/functions/admin-api"  
   status = 200
   force = true
