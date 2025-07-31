@@ -3,17 +3,35 @@
 // Agora com integração opcional ao Neon Database
 
 let pool = null;
+let pgAvailable = false;
 
 // Tentar conectar ao Neon Database
-try {
-  const { Pool } = require('pg');
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_30vfdEapKsji@ep-polished-glitter-ad3ve5sr-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
-    ssl: { rejectUnauthorized: false }
-  });
-  console.log('📊 Pool Neon Database inicializado');
-} catch (error) {
-  console.log('⚠️ Neon Database não disponível, usando sistema mock:', error.message);
+async function initializeNeonPool() {
+  try {
+    console.log('🔍 Verificando disponibilidade do módulo pg...');
+    const { Pool } = require('pg');
+    
+    console.log('✅ Módulo pg encontrado, inicializando pool...');
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_30vfdEapKsji@ep-polished-glitter-ad3ve5sr-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+      ssl: { rejectUnauthorized: false }
+    });
+    
+    // Testar conexão
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
+    
+    pgAvailable = true;
+    console.log('🎉 Pool Neon Database inicializado e conectado com sucesso!');
+    return true;
+  } catch (error) {
+    console.log('⚠️ Erro ao inicializar Neon Database:', error.message);
+    console.log('🔄 Continuando com sistema mock...');
+    pool = null;
+    pgAvailable = false;
+    return false;
+  }
 }
 
 // Dados mock realistas e profissionais
@@ -266,16 +284,29 @@ exports.handler = async (event, context) => {
 
     // TESTE DE CONEXÃO NEON DATABASE
     if (path.includes('/test-neon') || path.includes('/neon-test')) {
-      if (!pool) {
+      console.log('🔗 Iniciando teste de conexão Neon...');
+      
+      // Tentar inicializar pool se ainda não foi feito
+      if (!pgAvailable && !pool) {
+        console.log('🔄 Tentando inicializar pool Neon...');
+        await initializeNeonPool();
+      }
+      
+      if (!pool || !pgAvailable) {
         return {
           statusCode: 200,
           headers: corsHeaders,
           body: JSON.stringify({
             success: false,
-            message: '⚠️ Neon Database não configurado - usando sistema mock',
+            message: '⚠️ Neon Database não disponível - usando sistema mock',
             mode: 'mock',
             mock_users: mockDatabase.users.length,
             mock_departments: mockDatabase.departments.length,
+            debug_info: {
+              pool_exists: !!pool,
+              pg_available: pgAvailable,
+              env_database_url: !!process.env.DATABASE_URL
+            },
             timestamp: new Date().toISOString()
           })
         };
@@ -321,6 +352,10 @@ exports.handler = async (event, context) => {
               user_count: userCount
             },
             mode: 'neon_database',
+            debug_info: {
+              env_database_url: !!process.env.DATABASE_URL,
+              connection_string_used: process.env.DATABASE_URL ? 'ENV variable' : 'Hardcoded'
+            },
             timestamp: new Date().toISOString()
           })
         };
@@ -338,7 +373,8 @@ exports.handler = async (event, context) => {
             mode: 'mock_fallback',
             error_details: {
               code: error.code,
-              detail: error.detail
+              detail: error.detail,
+              stack: error.stack
             },
             timestamp: new Date().toISOString()
           })
