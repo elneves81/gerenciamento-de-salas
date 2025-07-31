@@ -6,23 +6,29 @@ const JWT_SECRET = process.env.JWT_SECRET || 'sua-chave-secreta-muito-segura';
 
 // Configuração do banco Google Cloud SQL
 const getDbClient = () => {
-  // Tentativa com usuário postgres padrão
+  // Configuração robusta - prioriza env vars mas tem fallback
   const dbConfig = {
-    host: '34.95.225.183',
-    port: 5432,
-    database: 'salafacil',
-    user: 'postgres',
-    password: 'elber@2025',
+    host: process.env.DB_HOST || '34.95.225.183',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    database: process.env.DB_NAME || 'salafacil',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'elber@2025',
     ssl: {
       rejectUnauthorized: false
     }
   };
 
-  console.log('🔗 Tentando conectar com:', {
-    host: dbConfig.host,
-    database: dbConfig.database,
-    user: dbConfig.user,
-    password: '***' + dbConfig.password.slice(-4)
+  // Se DATABASE_URL existir, use ela (formato: postgresql://user:pass@host:port/db)
+  if (process.env.DATABASE_URL) {
+    dbConfig.connectionString = process.env.DATABASE_URL;
+    dbConfig.ssl = { rejectUnauthorized: false };
+  }
+
+  console.log('🔗 Conectando com:', {
+    host: dbConfig.host || 'via connectionString',
+    database: dbConfig.database || 'via connectionString',
+    user: dbConfig.user || 'via connectionString',
+    hasConnectionString: !!process.env.DATABASE_URL
   });
 
   return new Client(dbConfig);
