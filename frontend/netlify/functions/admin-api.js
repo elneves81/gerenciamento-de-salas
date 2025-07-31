@@ -265,8 +265,124 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // REGISTRO DE NOVOS USUÁRIOS
+    if (path.includes('/register')) {
+      if (httpMethod === 'POST') {
+        const body = JSON.parse(event.body || '{}');
+        const { email, password, nome, telefone } = body;
+        
+        console.log('📝 Tentativa de registro:', { email, nome });
+        
+        // Verificar se email já existe
+        const existingUser = mockDatabase.users.find(u => u.email === email);
+        if (existingUser) {
+          return {
+            statusCode: 400,
+            headers: corsHeaders,
+            body: JSON.stringify({
+              success: false,
+              message: 'Email já está sendo usado por outro usuário'
+            })
+          };
+        }
+        
+        // Criar novo usuário
+        const newUser = {
+          id: mockDatabase.users.length + 1,
+          nome: nome || 'Novo Usuário',
+          email: email,
+          telefone: telefone || '(11) 00000-0000',
+          role: 'user',
+          status: 'active',
+          department_id: 1,
+          department_name: 'Administração',
+          created_at: new Date().toISOString(),
+          password: password // Em produção real, seria hash
+        };
+        
+        mockDatabase.users.push(newUser);
+        
+        // Retornar token para login automático
+        return {
+          statusCode: 201,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            success: true,
+            message: 'Usuário criado com sucesso!',
+            token: 'token_' + Date.now() + '_' + newUser.id,
+            refreshToken: 'refresh_' + Date.now() + '_' + newUser.id,
+            user: {
+              id: newUser.id,
+              username: newUser.email,
+              email: newUser.email,
+              first_name: newUser.nome.split(' ')[0],
+              last_name: newUser.nome.split(' ').slice(1).join(' '),
+              name: newUser.nome,
+              role: newUser.role,
+              department: newUser.department_name,
+              is_staff: false,
+              is_superuser: false
+            }
+          })
+        };
+      }
+      
+      return {
+        statusCode: 405,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Método não permitido' })
+      };
+    }
+
     // LOGIN TRADICIONAL - Nova implementação para usuário e senha
     if (path.includes('/auth') && !path.includes('google-auth')) {
+      if (httpMethod === 'GET' && path.includes('/auth/me')) {
+        // Endpoint para verificar usuário atual baseado no token
+        const authHeader = event.headers.authorization || event.headers.Authorization;
+        
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return {
+            statusCode: 401,
+            headers: corsHeaders,
+            body: JSON.stringify({ error: 'Token de autorização requerido' })
+          };
+        }
+        
+        const token = authHeader.substring(7); // Remove 'Bearer '
+        
+        // Simular validação de token (extrair user_id do token)
+        const tokenParts = token.split('_');
+        if (tokenParts.length >= 3) {
+          const userId = parseInt(tokenParts[2]);
+          const user = mockDatabase.users.find(u => u.id === userId);
+          
+          if (user && user.status === 'active') {
+            return {
+              statusCode: 200,
+              headers: corsHeaders,
+              body: JSON.stringify({
+                id: user.id,
+                username: user.email,
+                email: user.email,
+                first_name: user.nome.split(' ')[0],
+                last_name: user.nome.split(' ').slice(1).join(' '),
+                name: user.nome,
+                role: user.role,
+                department: user.department_name,
+                is_staff: ['admin', 'superadmin'].includes(user.role),
+                is_superuser: user.role === 'superadmin'
+              })
+            };
+          }
+        }
+        
+        return {
+          statusCode: 401,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Token inválido' })
+        };
+      }
+      
       if (httpMethod === 'POST') {
         const body = JSON.parse(event.body || '{}');
         const { username, password, action } = body;
@@ -445,6 +561,7 @@ exports.handler = async (event, context) => {
           users: '/api/admin/users',
           departments: '/api/admin/departments',
           auth: '/api/auth (POST: username, password, action=login)',
+          register: '/api/register (POST: email, password, nome, telefone)',
           google_auth: '/api/google-auth',
           admin_check: '/api/check-admin-status'
         },

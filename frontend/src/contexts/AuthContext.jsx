@@ -140,7 +140,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await api.post('/register', userData);
+      const response = await api.post('/api/register', userData);
       
       if (response.data.token) {
         setToken(response.data.token);

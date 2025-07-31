@@ -114,7 +114,7 @@ const AuthPage = () => {
 
   const validateForm = () => {
     if (!formData.email || !formData.password) {
-      setError('Email e senha são obrigatórios');
+      setError('Usuário/Email e senha são obrigatórios');
       return false;
     }
 
@@ -163,7 +163,7 @@ const AuthPage = () => {
       }
     } catch (error) {
       if (tabValue === 0) {
-        setError('Email ou senha incorretos. Tente novamente.');
+        setError('Usuário/Email ou senha incorretos. Tente: admin/admin123');
       } else {
         setError(error.response?.data?.message || 'Erro ao criar conta. Tente novamente.');
       }
@@ -232,11 +232,12 @@ const AuthPage = () => {
 
             <TextField
               fullWidth
-              label="Email"
-              type="email"
+              label="Usuário ou Email"
+              type="text"
               value={formData.email}
               onChange={handleInputChange('email')}
               margin="normal"
+              placeholder="admin ou seu@email.com"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
