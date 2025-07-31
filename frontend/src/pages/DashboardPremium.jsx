@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { useMediaQuery } from '@mui/material';
 import {
   Box,
   Grid,
@@ -81,19 +80,14 @@ import {
   Assessment,
   Logout,
   History,
-  Lightbulb,
-  Room
+  Lightbulb
 } from '@mui/icons-material';
 import { format, isToday, isTomorrow, parseISO, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import api from '../services/api';
-import ChatSystem from '../components/ChatSystem';
-import SalaFacilLogo from '../components/SalaFacilLogo';
 import GraficosInterativosSimples from '../components/GraficosInterativosSimples';
 import RelatoriosAvancados from '../components/RelatoriosAvancados';
 import GoogleCalendarResponsive from '../components/GoogleCalendarResponsive';
-import CalendarioEstilizado from '../components/CalendarioEstilizado';
-import AdminPanel from '../components/AdminPanel';
 import { useNotifications, useAutoNotifications } from '../components/NotificationSystem';
 import useReunioesAutoUpdate from '../hooks/useReunioesAutoUpdate';
 
@@ -131,9 +125,6 @@ const DashboardPremium = () => {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [allReservas, setAllReservas] = useState([]);
   
-  // Responsividade
-  const isMobile = useMediaQuery('(max-width:768px)');
-  
   // Estados para análises e relatórios
   const [analytics, setAnalytics] = useState({
     ocupacao: [],
@@ -155,9 +146,6 @@ const DashboardPremium = () => {
     data_fim: '',
     participantes: 1
   });
-  
-  // Estado para AdminPanel
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
   
   // Função de logout
   const handleLogout = () => {
@@ -499,15 +487,8 @@ const DashboardPremium = () => {
         <Paper elevation={3} sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
             <Box display="flex" alignItems="center" gap={3}>
-              <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 80, height: 60, borderRadius: 2 }}>
-                <SalaFacilLogo 
-                  size="small" 
-                  sx={{ 
-                    filter: 'brightness(0) invert(1)',
-                    width: 70,
-                    height: 50
-                  }} 
-                />
+              <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 64, height: 64 }}>
+                <DashboardIcon sx={{ fontSize: 32 }} />
               </Avatar>
               <Box>
                 <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -578,14 +559,6 @@ const DashboardPremium = () => {
                   sx={{ color: 'white' }}
                 >
                   <Settings />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Painel Administrativo">
-                <IconButton 
-                  onClick={() => setShowAdminPanel(true)}
-                  sx={{ color: 'white' }}
-                >
-                  <DashboardIcon />
                 </IconButton>
               </Tooltip>
               <Tooltip title={darkMode ? "Modo Claro" : "Modo Escuro"}>
@@ -709,28 +682,14 @@ const DashboardPremium = () => {
               '& .MuiTab-root': {
                 minWidth: isMobile ? 120 : 'auto',
                 fontSize: isMobile ? '0.8rem' : '0.875rem',
-                padding: isMobile ? '6px 12px' : '12px 16px',
-                fontWeight: 'bold'
+                padding: isMobile ? '6px 12px' : '12px 16px'
               }
             }}
           >
             <Tab 
-              label={isMobile ? "Dashboard" : "Visão Geral"}
+              label={isMobile ? "Geral" : "Visão Geral"}
               icon={<DashboardIcon />} 
               iconPosition={isMobile ? "top" : "start"}
-            />
-            <Tab 
-              label={isMobile ? "Calendário" : "📅 Calendário de Reuniões"} 
-              icon={<CalendarToday />} 
-              iconPosition={isMobile ? "top" : "start"}
-              sx={{ 
-                backgroundColor: activeTab === 1 ? 'primary.light' : 'transparent',
-                color: activeTab === 1 ? 'primary.contrastText' : 'inherit',
-                '&:hover': {
-                  backgroundColor: 'primary.light',
-                  color: 'primary.contrastText'
-                }
-              }}
             />
             <Tab 
               label="Análises" 
@@ -740,6 +699,11 @@ const DashboardPremium = () => {
             <Tab 
               label="Relatórios" 
               icon={<BarChart />} 
+              iconPosition={isMobile ? "top" : "start"}
+            />
+            <Tab 
+              label="Calendário" 
+              icon={<CalendarToday />} 
               iconPosition={isMobile ? "top" : "start"}
             />
             <Tab 
@@ -1147,7 +1111,7 @@ const DashboardPremium = () => {
         )}
 
         {/* Tab de Análises */}
-        {activeTab === 2 && (
+        {activeTab === 1 && (
           <Grid container spacing={3}>
             {/* Gráfico de Ocupação por Dia */}
             <Grid item xs={12} lg={8}>
@@ -1325,7 +1289,7 @@ const DashboardPremium = () => {
         )}
 
         {/* Tab de Relatórios */}
-        {activeTab === 3 && (
+        {activeTab === 2 && (
           <Grid container spacing={3}>
             {/* Controles de Filtro */}
             <Grid item xs={12}>
@@ -1677,14 +1641,10 @@ const DashboardPremium = () => {
           </Grid>
         )}
 
-        {/* Tab de Calendário - Aba Principal de Reuniões */}
-        {activeTab === 1 && (
-          <Box sx={{ mt: 2, height: 'calc(100vh - 200px)' }}>
-            <CalendarioEstilizado 
-              reservas={allReservas} 
-              salas={salas} 
-              onNovaReserva={loadAllData}
-            />
+        {/* Tab de Calendário */}
+        {activeTab === 3 && (
+          <Box sx={{ mt: 2, height: { xs: 'auto', md: '70vh' } }}>
+            <GoogleCalendarResponsive reservas={allReservas} salas={salas} />
           </Box>
         )}
 
@@ -1881,38 +1841,6 @@ const DashboardPremium = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Dialog do Painel Administrativo */}
-        <Dialog 
-          open={showAdminPanel} 
-          onClose={() => setShowAdminPanel(false)} 
-          maxWidth="xl" 
-          fullWidth
-          PaperProps={{
-            sx: { height: '90vh' }
-          }}
-        >
-          <DialogTitle>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              🔧 Painel Administrativo
-            </Typography>
-            <IconButton
-              aria-label="close"
-              onClick={() => setShowAdminPanel(false)}
-              sx={{
-                position: 'absolute',
-                right: 8,
-                top: 8,
-                color: (theme) => theme.palette.grey[500],
-              }}
-            >
-              <Close />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent dividers sx={{ p: 0 }}>
-            <AdminPanel />
-          </DialogContent>
-        </Dialog>
-
         {/* Snackbar para notificações do sistema */}
         <Snackbar
           open={snackbar.open}
@@ -1929,9 +1857,6 @@ const DashboardPremium = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
-        
-        {/* Sistema de Chat Global */}
-        <ChatSystem />
       </Box>
     </Container>
   );

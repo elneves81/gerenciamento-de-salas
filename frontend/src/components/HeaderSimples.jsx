@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationCenter } from './NotificationSystem';
-import { useNotifications } from '../contexts/NotificationContext';
-import SalaFacilLogo from './SalaFacilLogo';
 import { 
   Building2,
   Settings,
@@ -15,7 +13,6 @@ import {
 
 const HeaderSimples = ({ title = "Sistema de Reservas" }) => {
   const { user, logout } = useAuth();
-  const { NotificationIcon } = useNotifications();
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,30 +41,26 @@ const HeaderSimples = ({ title = "Sistema de Reservas" }) => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '16px'
+          gap: '12px'
         }}>
           <button 
             onClick={() => navigate('/dashboard')}
             style={{
-              background: 'transparent',
+              background: 'rgba(255, 255, 255, 0.15)',
               border: 'none',
+              borderRadius: '12px',
+              padding: '10px',
+              color: 'white',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'all 0.3s ease',
-              padding: '4px'
+              transition: 'all 0.3s ease'
             }}
+            onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.25)'}
+            onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.15)'}
           >
-            <SalaFacilLogo 
-              size="small" 
-              sx={{ 
-                filter: 'brightness(0) invert(1)',
-                '&:hover': {
-                  transform: 'scale(1.05)'
-                }
-              }} 
-            />
+            <Building2 size={24} />
           </button>
           <div>
             <h1 style={{
@@ -144,10 +137,7 @@ const HeaderSimples = ({ title = "Sistema de Reservas" }) => {
         }}>
           {/* Notificações */}
           <NotificationCenter />
-          
-          {/* Novo Sistema de Notificações */}
-          <NotificationIcon />
-          
+
           {/* Configurações */}
           <button style={{
             background: 'rgba(255, 255, 255, 0.15)',

@@ -265,6 +265,84 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // LOGIN TRADICIONAL - Nova implementação para usuário e senha
+    if (path.includes('/auth') && !path.includes('google-auth')) {
+      if (httpMethod === 'POST') {
+        const body = JSON.parse(event.body || '{}');
+        const { username, password, action } = body;
+        
+        console.log('🔐 Tentativa de login:', { username, action });
+        
+        if (action === 'login') {
+          // Credenciais fixas para produção + busca por email/username
+          const validCredentials = [
+            { username: 'admin', password: 'admin123', user_id: 1 },
+            { username: 'admin@salafacil.com', password: 'admin123', user_id: 1 },
+            { username: 'joao.silva@salafacil.com', password: 'user123', user_id: 2 },
+            { username: 'maria.costa@salafacil.com', password: 'manager123', user_id: 3 }
+          ];
+          
+          // Verificar credenciais
+          const credential = validCredentials.find(c => 
+            c.username === username && c.password === password
+          );
+          
+          if (credential) {
+            // Buscar usuário no mock database
+            const user = mockDatabase.users.find(u => u.id === credential.user_id);
+            
+            if (user && user.status === 'active') {
+              return {
+                statusCode: 200,
+                headers: corsHeaders,
+                body: JSON.stringify({
+                  success: true,
+                  message: 'Login realizado com sucesso!',
+                  access: 'token_' + Date.now() + '_' + user.id,
+                  refresh: 'refresh_' + Date.now() + '_' + user.id,
+                  user: {
+                    id: user.id,
+                    username: user.email,
+                    email: user.email,
+                    first_name: user.nome.split(' ')[0],
+                    last_name: user.nome.split(' ').slice(1).join(' '),
+                    name: user.nome,
+                    role: user.role,
+                    department: user.department_name,
+                    is_staff: ['admin', 'superadmin'].includes(user.role),
+                    is_superuser: user.role === 'superadmin'
+                  }
+                })
+              };
+            }
+          }
+          
+          // Credenciais inválidas
+          return {
+            statusCode: 401,
+            headers: corsHeaders,
+            body: JSON.stringify({
+              success: false,
+              detail: 'Credenciais inválidas. Tente: admin/admin123',
+              non_field_errors: ['Username ou senha incorretos']
+            })
+          };
+        }
+        
+        return {
+          statusCode: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Ação não reconhecida' })
+        };
+      }
+      
+      return {
+        statusCode: 405,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Método não permitido' })
+      };
+    }
+
     // Google Auth (mock implementation funcional)
     if (path.includes('google-auth')) {
       if (httpMethod === 'POST') {
@@ -366,7 +444,8 @@ exports.handler = async (event, context) => {
           stats: '/api/admin/stats',
           users: '/api/admin/users',
           departments: '/api/admin/departments',
-          auth: '/api/google-auth',
+          auth: '/api/auth (POST: username, password, action=login)',
+          google_auth: '/api/google-auth',
           admin_check: '/api/check-admin-status'
         },
         data_summary: {

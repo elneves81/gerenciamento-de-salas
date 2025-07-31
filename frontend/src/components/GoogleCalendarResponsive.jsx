@@ -227,83 +227,28 @@ const GoogleCalendarResponsive = ({ reservas = [], salas = [], onNovaReserva }) 
   const handleNovaReserva = (data = null) => {
     if (data) {
       const dataFormatada = data.toISOString().split('T')[0];
-      
       setNovaReserva(prev => ({
         ...prev,
         data_inicio: dataFormatada,
         data_fim: dataFormatada
       }));
-      
-      setSelectedDate(data);
     }
-    
-    // Sempre abrir o modal em vez de navegar
     setDialogReserva(true);
   };
 
-  const handleSalvarReserva = async () => {
-    try {
-      // Validações básicas
-      if (!novaReserva.titulo || !novaReserva.sala || !novaReserva.data_inicio) {
-        alert('Por favor, preencha todos os campos obrigatórios');
-        return;
-      }
-
-      // Construir dados da reserva
-      const dataInicio = `${novaReserva.data_inicio}T${novaReserva.hora_inicio}:00`;
-      const dataFim = `${novaReserva.data_fim || novaReserva.data_inicio}T${novaReserva.hora_fim}:00`;
-
-      const reservaData = {
-        titulo: novaReserva.titulo,
-        descricao: novaReserva.descricao,
-        sala_id: parseInt(novaReserva.sala),
-        data_inicio: dataInicio,
-        data_fim: dataFim,
-        usuario_id: 1 // Será extraído do token JWT
-      };
-
-      // Enviar para API
-      const response = await fetch('/.netlify/functions/agendamentos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')?.replace(/"/g, '')}`
-        },
-        body: JSON.stringify(reservaData)
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        alert('Reserva criada com sucesso!');
-        
-        // Fechar modal e limpar form
-        setDialogReserva(false);
-        setNovaReserva({
-          titulo: '',
-          descricao: '',
-          sala: '',
-          data_inicio: '',
-          hora_inicio: '09:00',
-          data_fim: '',
-          hora_fim: '10:00',
-          participantes: 1
-        });
-
-        // Recarregar dados se há callback
-        if (onNovaReserva) {
-          onNovaReserva();
-        } else {
-          // Recarregar a página para atualizar o calendário
-          window.location.reload();
-        }
-      } else {
-        alert(result.error || 'Erro ao criar reserva');
-      }
-    } catch (error) {
-      console.error('Erro ao salvar reserva:', error);
-      alert('Erro ao salvar reserva. Tente novamente.');
-    }
+  const handleSalvarReserva = () => {
+    console.log('Nova reserva:', novaReserva);
+    setDialogReserva(false);
+    setNovaReserva({
+      titulo: '',
+      descricao: '',
+      sala: '',
+      data_inicio: '',
+      hora_inicio: '09:00',
+      data_fim: '',
+      hora_fim: '10:00',
+      participantes: 1
+    });
   };
 
   const getTituloHeader = () => {
@@ -546,93 +491,34 @@ const GoogleCalendarResponsive = ({ reservas = [], salas = [], onNovaReserva }) 
                 {/* Reservas detalhadas no desktop */}
                 {!isMobile && (
                   <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                    {diaInfo.reservas && diaInfo.reservas.slice(0, 2).map((reserva, idx) => {
-                      // Cores diferentes para cada reserva
-                      const cores = [
-                        { bg: '#1976d2', text: '#ffffff' }, // Azul
-                        { bg: '#388e3c', text: '#ffffff' }, // Verde
-                        { bg: '#f57c00', text: '#ffffff' }, // Laranja
-                        { bg: '#7b1fa2', text: '#ffffff' }, // Roxo
-                        { bg: '#d32f2f', text: '#ffffff' }, // Vermelho
-                        { bg: '#0288d1', text: '#ffffff' }, // Azul claro
-                      ];
-                      
-                      const cor = cores[idx % cores.length];
-                      
-                      return (
-                        <Box
-                          key={idx}
-                          sx={{
-                            bgcolor: cor.bg,
-                            color: cor.text,
-                            px: 1,
-                            py: 0.5,
-                            mb: 0.5,
-                            borderRadius: '4px',
-                            fontSize: '10px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                            '&:hover': {
-                              opacity: 0.85,
-                              transform: 'translateY(-1px)',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
-                            },
-                            transition: 'all 0.2s ease'
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                            {/* Nome da reunião */}
-                            <Typography 
-                              variant="caption" 
-                              sx={{ 
-                                fontWeight: 'bold',
-                                lineHeight: 1.2,
-                                fontSize: 'inherit',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              {reserva.titulo || 'Reserva'}
-                            </Typography>
-                            
-                            {/* Horário */}
-                            <Typography 
-                              variant="caption" 
-                              sx={{ 
-                                fontSize: '9px',
-                                opacity: 0.9,
-                                lineHeight: 1
-                              }}
-                            >
-                              {reserva.hora_inicio} - {reserva.hora_fim}
-                            </Typography>
-                            
-                            {/* Sala */}
-                            {reserva.sala_nome && (
-                              <Typography 
-                                variant="caption" 
-                                sx={{ 
-                                  fontSize: '8px',
-                                  opacity: 0.8,
-                                  lineHeight: 1,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap'
-                                }}
-                              >
-                                📍 {reserva.sala_nome}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Box>
-                      )
-                    })}
+                    {diaInfo.reservas && diaInfo.reservas.slice(0, 2).map((reserva, idx) => (
+                      <Box
+                        key={idx}
+                        sx={{
+                          bgcolor: reserva.status === 'agendada' ? '#1a73e8' : 
+                                   reserva.status === 'em_andamento' ? '#dc2626' : '#10b981',
+                          color: 'white',
+                          px: 1,
+                          py: 0.25,
+                          mb: 0.25,
+                          borderRadius: '3px',
+                          fontSize: '9px',
+                          fontWeight: 500,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            opacity: 0.8
+                          }
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        {reserva.titulo || 'Reserva'}
+                      </Box>
+                    ))}
                     
                     {diaInfo.reservas && diaInfo.reservas.length > 2 && (
                       <Typography 

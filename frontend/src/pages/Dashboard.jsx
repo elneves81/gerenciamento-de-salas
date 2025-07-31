@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Calendar, Users, Building2, Clock, Plus } from 'lucide-react';
-import ChatSystem from '../components/ChatSystem';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -138,8 +137,8 @@ const Dashboard = () => {
           <h2 className="text-lg font-medium text-gray-900">Próximas Reservas</h2>
         </div>
         <div className="divide-y divide-gray-200">
-          {(Array.isArray(dashboardData.proximas_reservas) ? dashboardData.proximas_reservas : []).length > 0 ? (
-            (Array.isArray(dashboardData.proximas_reservas) ? dashboardData.proximas_reservas : []).map((reserva) => (
+          {dashboardData.proximas_reservas.length > 0 ? (
+            dashboardData.proximas_reservas.map((reserva) => (
               <div key={reserva.id} className="px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -171,9 +170,6 @@ const Dashboard = () => {
           )}
         </div>
       </div>
-      
-      {/* Sistema de Chat Global */}
-      <ChatSystem />
     </div>
   );
 };

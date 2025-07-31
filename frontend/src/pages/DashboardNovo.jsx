@@ -55,7 +55,7 @@ const Dashboard = () => {
       });
       
       // Processar próximas reservas
-      const proximasReservas = (Array.isArray(dashboardData.proximas_reservas) ? dashboardData.proximas_reservas : []).map(reserva => {
+      const proximasReservas = dashboardData.proximas_reservas.map(reserva => {
         const dataInicio = new Date(reserva.data_inicio);
         const dataFim = new Date(reserva.data_fim);
         const hoje = new Date();
@@ -349,9 +349,9 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="p-6">
-                {(Array.isArray(reservasProximas) ? reservasProximas : []).length > 0 ? (
+                {reservasProximas.length > 0 ? (
                   <div className="space-y-4">
-                    {(Array.isArray(reservasProximas) ? reservasProximas : []).map((reserva) => (
+                    {reservasProximas.map((reserva) => (
                       <ReservaCard key={reserva.id} reserva={reserva} />
                     ))}
                   </div>

@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './components/NotificationSystem';
-import NotificationProviderNew from './contexts/NotificationContext';
 import StorageInitializer from './components/StorageInitializer';
 import HeaderModernoLimpo from './components/HeaderModernoLimpo';
 import HeaderSimples from './components/HeaderSimples';
@@ -12,20 +11,17 @@ import ReservasModerno from './pages/ReservasModerno';
 import AuthPage from './pages/AuthPage';
 import NovaReserva from './pages/NovaReserva';
 import GerenciarSalas from './pages/GerenciarSalas';
-import ChatSystem from './components/ChatSystem';
 
 function App() {
   return (
     <StorageInitializer>
       <AuthProvider>
         <NotificationProvider>
-          <NotificationProviderNew>
-            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-              <div className="min-h-screen bg-gray-50">
-                <AppContent />
-              </div>
-            </Router>
-          </NotificationProviderNew>
+          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <div className="min-h-screen bg-gray-50">
+              <AppContent />
+            </div>
+          </Router>
         </NotificationProvider>
       </AuthProvider>
     </StorageInitializer>
@@ -80,9 +76,6 @@ function AppContent() {
         <Route path="/salas" element={<Navigate to="/reservas" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-      
-      {/* Sistema de Chat Global */}
-      <ChatSystem />
     </>
   );
 }

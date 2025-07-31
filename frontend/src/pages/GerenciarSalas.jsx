@@ -26,15 +26,7 @@ import {
   Snackbar,
   Tooltip,
   Switch,
-  FormControlLabel,
-  useMediaQuery,
-  Tabs,
-  Tab,
-  Divider,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel
+  FormControlLabel
 } from '@mui/material';
 import {
   Add,
@@ -45,21 +37,13 @@ import {
   Save,
   Cancel,
   Visibility,
-  VisibilityOff,
-  LocationOn,
-  Business,
-  Settings,
-  People
+  VisibilityOff
 } from '@mui/icons-material';
 import api from '../services/api';
-import GerenciarLocalizacoes from '../components/GerenciarLocalizacoes';
 
 const GerenciarSalas = () => {
   const navigate = useNavigate();
-  const isMobile = useMediaQuery('(max-width:768px)');
-  const [activeTab, setActiveTab] = useState(0);
   const [salas, setSalas] = useState([]);
-  const [localizacoes, setLocalizacoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -70,13 +54,11 @@ const GerenciarSalas = () => {
     nome: '',
     capacidade: '',
     descricao: '',
-    localizacao: '',
     ativa: true
   });
 
   useEffect(() => {
     loadSalas();
-    loadLocalizacoes();
   }, []);
 
   const loadSalas = async () => {
@@ -94,17 +76,6 @@ const GerenciarSalas = () => {
     }
   };
 
-  const loadLocalizacoes = async () => {
-    try {
-      const response = await api.get('/localizacoes');
-      const localizacoesData = Array.isArray(response.data) ? response.data : response.data?.results || [];
-      setLocalizacoes(localizacoesData);
-    } catch (err) {
-      console.error('Erro ao carregar localizações:', err);
-      // Não mostrar erro se as localizações falharem
-    }
-  };
-
   const handleOpenDialog = (sala = null) => {
     if (sala) {
       setEditingSala(sala);
@@ -112,7 +83,6 @@ const GerenciarSalas = () => {
         nome: sala.nome || '',
         capacidade: sala.capacidade || '',
         descricao: sala.descricao || '',
-        localizacao: sala.localizacao || '',
         ativa: sala.ativa !== false
       });
     } else {
@@ -121,7 +91,6 @@ const GerenciarSalas = () => {
         nome: '',
         capacidade: '',
         descricao: '',
-            localizacao: sala.localizacao || '',
         ativa: true
       });
     }
@@ -130,12 +99,11 @@ const GerenciarSalas = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-            localizacao: '',
+    setEditingSala(null);
     setFormData({
       nome: '',
       capacidade: '',
       descricao: '',
-      localizacao_id: '',
       ativa: true
     });
   };
@@ -151,7 +119,6 @@ const GerenciarSalas = () => {
         nome: formData.nome.trim(),
         capacidade: parseInt(formData.capacidade) || 0,
         descricao: formData.descricao.trim(),
-          localizacao: formData.localizacao || null,
         ativa: formData.ativa
       };
 
@@ -308,154 +275,8 @@ const GerenciarSalas = () => {
           </Grid>
         </Grid>
 
-        {/* Tabs de Navegação */}
-        <Paper elevation={2} sx={{ mb: 3 }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={(e, newValue) => setActiveTab(newValue)}
-            variant={isMobile ? "scrollable" : "fullWidth"}
-            scrollButtons="auto"
-            allowScrollButtonsMobile
-            sx={{ 
-              borderBottom: 1, 
-              borderColor: 'divider',
-              '& .MuiTab-root': {
-                minWidth: isMobile ? 120 : 'auto',
-                fontSize: isMobile ? '0.8rem' : '0.875rem',
-                padding: isMobile ? '6px 12px' : '12px 16px'
-              }
-            }}
-          >
-            <Tab 
-              label="Salas"
-              icon={<MeetingRoom />} 
-              iconPosition={isMobile ? "top" : "start"}
-            />
-            <Tab 
-              label="Localizações" 
-              icon={<LocationOn />} 
-              iconPosition={isMobile ? "top" : "start"}
-            />
-          </Tabs>
-        </Paper>
-
-        {/* Conteúdo das Tabs */}
-        {activeTab === 0 && (
-          <>
-            {/* Tabela de Salas */}
-            <Paper elevation={2}>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: 'grey.100' }}>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Nome</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Capacidade</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Descrição</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Ações</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {salas.length > 0 ? (
-                      salas.map((sala) => (
-                        <TableRow 
-                          key={sala.id}
-                          sx={{ 
-                            '&:hover': { bgcolor: 'grey.50' },
-                            opacity: sala.ativa === false ? 0.6 : 1
-                          }}
-                        >
-                          <TableCell>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <MeetingRoom color={sala.ativa !== false ? 'primary' : 'disabled'} />
-                              <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-                                {sala.nome}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={`${sala.capacidade || 0} pessoas`}
-                              color="primary"
-                              size="small"
-                              variant="outlined"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2" color="text.secondary">
-                              {sala.descricao || 'Sem descrição'}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Chip 
-                                label={sala.ativa ? 'Ativa' : 'Inativa'}
-                                color={sala.ativa ? 'success' : 'error'}
-                                size="small"
-                              />
-                              <Switch
-                                checked={Boolean(sala.ativa)}
-                                onChange={() => handleToggleAtiva(sala)}
-                                size="small"
-                                color="primary"
-                              />
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Box display="flex" gap={1}>
-                              <Tooltip title="Editar">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleOpenDialog(sala)}
-                                  color="primary"
-                                >
-                                  <Edit />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Excluir">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleDelete(sala.id, sala.nome)}
-                                  color="error"
-                                >
-                                  <Delete />
-                                </IconButton>
-                              </Tooltip>
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
-                          <MeetingRoom sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                          <Typography variant="h6" color="text.secondary" gutterBottom>
-                            Nenhuma sala cadastrada
-                          </Typography>
-                          <Button 
-                            variant="contained" 
-                            startIcon={<Add />}
-                            onClick={() => handleOpenDialog()}
-                            sx={{ mt: 2 }}
-                          >
-                            Criar Primeira Sala
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
-          </>
-        )}
-
-        {activeTab === 1 && (
-          <GerenciarLocalizacoes />
-        )}
-
         {/* Tabela de Salas */}
-        <Paper elevation={2} sx={{ display: 'none' }}>
+        <Paper elevation={2}>
           <TableContainer>
             <Table>
               <TableHead>
@@ -501,15 +322,14 @@ const GerenciarSalas = () => {
                       <TableCell>
                         <Box display="flex" alignItems="center" gap={1}>
                           <Chip 
-                            label={sala.ativa ? 'Ativa' : 'Inativa'}
-                            color={sala.ativa ? 'success' : 'error'}
+                            label={sala.ativa !== false ? 'Ativa' : 'Inativa'}
+                            color={sala.ativa !== false ? 'success' : 'error'}
                             size="small"
                           />
                           <Switch
-                            checked={Boolean(sala.ativa)}
+                            checked={sala.ativa !== false}
                             onChange={() => handleToggleAtiva(sala)}
                             size="small"
-                            color="primary"
                           />
                         </Box>
                       </TableCell>
@@ -594,26 +414,6 @@ const GerenciarSalas = () => {
                 sx={{ mb: 2 }}
                 placeholder="Descreva os recursos da sala..."
               />
-              
-              {/* Campo de Localização */}
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Localização</InputLabel>
-                <Select
-                  value={formData.localizacao}
-                  label="Localização"
-                  onChange={(e) => setFormData({ ...formData, localizacao: e.target.value })}
-                >
-                  <MenuItem value="">
-                    <em>Nenhuma localização</em>
-                  </MenuItem>
-                  {localizacoes.map((local) => (
-                    <MenuItem key={local.id} value={local.id}>
-                      {local.nome} ({local.tipo})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              
               <FormControlLabel
                 control={
                   <Switch
