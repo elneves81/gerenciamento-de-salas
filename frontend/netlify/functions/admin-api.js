@@ -6,23 +6,24 @@ const JWT_SECRET = process.env.JWT_SECRET || 'sua-chave-secreta-muito-segura';
 
 // Configuração do banco Google Cloud SQL
 const getDbClient = () => {
-  // Configuração de fallback robusta
+  // Sempre usar configuração direta para evitar problemas de encoding
   const dbConfig = {
-    connectionString: process.env.DATABASE_URL,
+    host: '34.95.225.183',
+    port: 5432,
+    database: 'salafacil',
+    user: 'salafacil_user',
+    password: 'elber@2025',
     ssl: {
       rejectUnauthorized: false
     }
   };
 
-  // Configuração alternativa se DATABASE_URL falhar
-  if (!process.env.DATABASE_URL) {
-    dbConfig.host = '34.95.225.183';
-    dbConfig.port = 5432;
-    dbConfig.database = 'salafacil';
-    dbConfig.user = 'salafacil_user';
-    dbConfig.password = 'elber@2025';
-    dbConfig.ssl = { rejectUnauthorized: false };
-  }
+  console.log('🔗 Tentando conectar com:', {
+    host: dbConfig.host,
+    database: dbConfig.database,
+    user: dbConfig.user,
+    password: '***' + dbConfig.password.slice(-4)
+  });
 
   return new Client(dbConfig);
 };
