@@ -265,22 +265,63 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Google Auth (mock implementation)
+    // Google Auth (mock implementation funcional)
     if (path.includes('google-auth')) {
-      return {
-        statusCode: 200,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          success: true,
-          message: 'Google Auth Mock - Sistema Demo',
-          user: {
-            name: 'Demo User',
-            email: 'demo@salafacil.com',
+      if (httpMethod === 'POST') {
+        const body = JSON.parse(event.body || '{}');
+        
+        // Simular decodificação do token Google (mock)
+        const mockGoogleUser = {
+          email: 'admin@salafacil.com',
+          name: 'Administrador Principal',
+          picture: 'https://via.placeholder.com/150?text=Admin'
+        };
+        
+        // Encontrar ou criar usuário baseado no email do Google
+        let user = mockDatabase.users.find(u => u.email === mockGoogleUser.email);
+        
+        if (!user) {
+          // Criar novo usuário se não existir
+          user = {
+            id: mockDatabase.users.length + 1,
+            nome: mockGoogleUser.name,
+            email: mockGoogleUser.email,
+            telefone: '(11) 99999-0000',
             role: 'admin',
-            picture: 'https://via.placeholder.com/150'
-          },
-          token: 'mock_token_' + Date.now()
-        })
+            status: 'active',
+            department_id: 1,
+            department_name: 'Administração',
+            created_at: new Date().toISOString(),
+            google_auth: true,
+            picture: mockGoogleUser.picture
+          };
+          mockDatabase.users.push(user);
+        }
+        
+        return {
+          statusCode: 200,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            success: true,
+            message: 'Login com Google realizado com sucesso!',
+            user: {
+              id: user.id,
+              name: user.nome,
+              email: user.email,
+              role: user.role,
+              picture: user.picture || mockGoogleUser.picture,
+              department: user.department_name
+            },
+            token: 'google_token_' + Date.now() + '_' + user.id,
+            refreshToken: 'refresh_google_' + Date.now()
+          })
+        };
+      }
+      
+      return {
+        statusCode: 405,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Método não permitido' })
       };
     }
 
