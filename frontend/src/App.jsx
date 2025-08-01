@@ -6,7 +6,7 @@ import StorageInitializer from './components/StorageInitializer';
 import HeaderModernoLimpo from './components/HeaderModernoLimpo';
 import HeaderSimples from './components/HeaderSimples';
 import HeaderSimplesLimpo from './components/HeaderSimplesLimpo';
-import Dashboard from './pages/DashboardPremium';
+import Dashboard from './pages/DashboardClean';
 import ReservasModerno from './pages/ReservasModerno';
 import AuthPage from './pages/AuthPage';
 import NovaReserva from './pages/NovaReserva';
