@@ -53,7 +53,9 @@ exports.handler = async (event, context) => {
     const pathToCheck = event.path || event.rawUrl || event.queryStringParameters?.path || '';
     console.log('📍 Path being checked:', pathToCheck);
     
-    // TESTE DE CONEXÃO COM BANCO (primeiro para evitar conflitos)
+    // ROTEAMENTO PRINCIPAL - SEM DUPLICAÇÕES
+    
+    // TESTE DE CONEXÃO COM BANCO
     if (pathToCheck.includes('/test-db') || pathToCheck.includes('/test-connection')) {
       return await handleTestDb(headers);
     }
@@ -68,7 +70,7 @@ exports.handler = async (event, context) => {
       return await handleAgendamentos(event, headers);
     }
     
-    // ROTEAMENTO DE AUTENTICAÇÃO (default para tudo que sobrar)
+    // ROTEAMENTO DE AUTENTICAÇÃO
     if (pathToCheck.includes('/auth') || pathToCheck.includes('/api/auth') || 
         pathToCheck.includes('/login') || pathToCheck.includes('/register') ||
         pathToCheck.includes('/google-auth') || pathToCheck === '' || pathToCheck === '/api') {
@@ -92,23 +94,15 @@ exports.handler = async (event, context) => {
       }
     }
 
-    // ROTEAMENTO DE SALAS
-    if (pathToCheck.includes('/salas') || pathToCheck.includes('/get-salas')) {
-      return await handleSalas(event, headers);
-    }
-
-    // ROTEAMENTO DE AGENDAMENTOS  
-    if (pathToCheck.includes('/agendamentos')) {
-      return await handleAgendamentos(event, headers);
-    }
-
     // Endpoint padrão
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({ 
         message: '🚀 SalaFacil API funcionando!',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        path: pathToCheck,
+        method: event.httpMethod
       })
     };
 
@@ -574,7 +568,7 @@ async function handleSalas(event, headers) {
         nome,
         parseInt(capacidade),
         localizacao || '',
-        equipamentos || [],  // Passamos diretamente a array, não JSON.stringify
+        Array.isArray(equipamentos) ? JSON.stringify(equipamentos) : (equipamentos || '[]'),
         descricao || '',
         parseFloat(preco_hora || 0),
         true
@@ -647,7 +641,7 @@ async function handleSalas(event, headers) {
         nome,
         parseInt(capacidade),
         localizacao,
-        equipamentos || [],
+        Array.isArray(equipamentos) ? JSON.stringify(equipamentos) : (equipamentos || '[]'),
         descricao,
         parseFloat(preco_hora || 0),
         ativa !== undefined ? ativa : true,
