@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import WelcomeGreeting from '../components/WelcomeGreeting';
 import { useMediaQuery } from '@mui/material';
 import {
   Box,
@@ -175,8 +176,11 @@ const DashboardClean = () => {
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      {/* Greeting Component */}
+      <WelcomeGreeting userName={user?.first_name || user?.nome || 'Usuário'} />
+      
       {/* Header */}
-      <Box display="flex" justifyContent="between" alignItems="center" mb={4}>
+      <Box display="flex" justifyContent="between" alignItems="center" mb={4} mt={3}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
             Dashboard SalaFácil
