@@ -11,6 +11,7 @@ import ReservasModerno from './pages/ReservasModerno';
 import AuthPage from './pages/AuthPage';
 import NovaReserva from './pages/NovaReserva';
 import GerenciarSalas from './pages/GerenciarSalas';
+import GreetingDemo from './pages/GreetingDemo';
 
 function App() {
   return (
@@ -30,6 +31,13 @@ function App() {
 
 function AppContent() {
   const { user, loading } = useAuth();
+  
+  // Check if we're on the demo route (no auth required)
+  const isDemoRoute = window.location.pathname === '/demo-greeting';
+  
+  if (isDemoRoute) {
+    return <GreetingDemo />;
+  }
 
   if (loading) {
     return (

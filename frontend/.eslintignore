@@ -1,0 +1,9 @@
+dist/
+node_modules/
+.vite/
+netlify/
+public/debug-storage.js
+src/**/*.backup
+src/**/*.old
+*.test.*
+*.spec.*
